@@ -19,3 +19,5 @@ Development changes use `pnpm db:migrate -- --name descriptive_name`. Review the
 The seed upserts one admin and default dealer settings. It requires `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD`; plaintext credentials are never stored.
 
 Phase 1 adds no Prisma model or column. A SQL-only migration adds the partial unique index `CarImage_one_primary_per_car`, enforcing at database level that each car has at most one primary image. Application transactions preserve deterministic contiguous `sortOrder` values during normal reorder/delete operations. The optional seed now adds four small brand/model pairs and no fake car inventory.
+
+Phase 5 preserves the schema and upserts DealerSettings exclusively against fixed ID `default`; no settings rows or migration are added. Dashboard metrics use database counts/grouping and do not alter public visibility.

@@ -12,6 +12,8 @@ export type DealerPresentation = {
   address: string | null;
   instagramUrl: string | null;
   facebookUrl: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
 };
 
 export const dealerFallback: DealerPresentation = {
@@ -23,6 +25,8 @@ export const dealerFallback: DealerPresentation = {
   address: null,
   instagramUrl: null,
   facebookUrl: null,
+  primaryColor: null,
+  secondaryColor: null,
 };
 
 export function isHomepageCarVisible(status: PublicCarStatus) {
@@ -101,5 +105,7 @@ export function mergeDealerPresentation(
     address: clean(settings?.address),
     instagramUrl: clean(settings?.instagramUrl),
     facebookUrl: clean(settings?.facebookUrl),
+    primaryColor: clean(settings?.primaryColor),
+    secondaryColor: clean(settings?.secondaryColor),
   };
 }

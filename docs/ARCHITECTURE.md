@@ -37,3 +37,7 @@ Client forms invoke dedicated `use server` action modules. Each action re-author
 ## Phase 4 detail read flow
 
 `server/car-detail/service.ts` validates a public slug, fetches an exact `status = AVAILABLE` car with selected relations/images, resolves media through `StorageProvider`, converts Decimal values, reads public DealerSettings, and queries three bounded related-vehicle tiers. React request caching shares the service result between metadata and page rendering. `features/car-detail/domain.ts` owns title, visibility, image ordering, SEO text, and encoded WhatsApp rules. Only the thumbnail gallery is a Client Component. The sitemap uses the same server boundary to include AVAILABLE slugs and degrades to static entries if PostgreSQL is unavailable.
+
+## Phase 5 administration flow
+
+Protected settings UI calls authenticated Server Actions, validates with Zod, and upserts fixed `DealerSettings.id = "default"`. Logo storage uses `dealer/logo/` keys with compensation and best-effort old-object cleanup. Targeted revalidation refreshes public consumers. Public layout maps validated colors to CSS variables. The dashboard service runs counts, grouping, and recent reads in parallel and returns an explicit error variant instead of invented zeroes.

@@ -14,7 +14,7 @@ const links = [
 function Brand({ dealer }: { dealer: DealerPresentation }) {
   return (
     <Link className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-red-500" href="/">
-      {dealer.logoUrl ? <Image alt={`Logo ${dealer.dealerName}`} className="h-10 w-10 rounded-lg object-contain" height={40} src={dealer.logoUrl} unoptimized width={40} /> : <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-red-600 text-lg font-black text-white">D</span>}
+      {dealer.logoUrl ? <Image alt={`Logo ${dealer.dealerName}`} className="h-10 w-10 rounded-lg object-contain" height={40} src={dealer.logoUrl} unoptimized width={40} /> : <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-lg font-black text-white">D</span>}
       <span className="truncate text-sm font-black tracking-tight text-white sm:text-base">{dealer.dealerName}</span>
     </Link>
   );
@@ -32,7 +32,7 @@ export function SiteHeader({ dealer }: { dealer: DealerPresentation }) {
           </ul>
         </nav>
         <div className="hidden lg:block">
-          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-xl bg-red-600 px-4 text-sm font-bold text-white transition hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500" href={whatsappUrl} rel="noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-bold text-white hover:bg-white/10" href="/#contact">Hubungi Kami</Link>}
+          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-xl bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500" href={whatsappUrl} rel="noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-bold text-white hover:bg-white/10" href="/#contact">Hubungi Kami</Link>}
         </div>
         <details className="group relative lg:hidden">
           <summary aria-label="Buka menu navigasi" className="grid min-h-11 min-w-11 cursor-pointer list-none place-items-center rounded-xl border border-white/15 text-white focus-visible:outline-2 focus-visible:outline-red-500">

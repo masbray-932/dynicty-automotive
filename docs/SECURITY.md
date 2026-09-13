@@ -15,3 +15,5 @@
 Set temporary `ADMIN_EMAIL` and a unique password of 12–128 characters containing uppercase, lowercase, and numeric characters. Run `pnpm db:seed`, then remove those two values from the runtime environment. Rotate credentials if they are exposed. Production should add login throttling, audit logging, session cleanup, and security headers during hardening.
 
 Every Phase 1 mutation calls `requireAdmin()` inside the Server Action. Identifiers are validated as CUIDs, related models are re-read from the database, database errors are converted to safe Indonesian messages, deletion is POST/action based with browser confirmation, and upload content is restricted by size, MIME, signature, and safe server-generated object keys.
+
+Phase 5 settings actions re-authorize independently; validate text, URL, email, phone, shared WhatsApp, and hex color input server-side; reject invalid logo content/paths; and return safe errors. No arbitrary redirect, HTML, or CSS is accepted. Dashboard data stays behind the protected layout.

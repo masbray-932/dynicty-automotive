@@ -13,6 +13,11 @@ export function createCarImageKey(
   return `cars/${safeSegment(carId)}/${uniqueSuffix}-${fileName}`;
 }
 
+export function createDealerLogoKey(originalName: string, uniqueSuffix = crypto.randomUUID()) {
+  const fileName = safeSegment(originalName) || "logo";
+  return `dealer/logo/${uniqueSuffix}-${fileName}`;
+}
+
 export function assertSafeStorageKey(key: string) {
   if (!key || key.startsWith("/") || key.includes("..") || key.includes("\\")) {
     throw new Error("Unsafe storage key.");
