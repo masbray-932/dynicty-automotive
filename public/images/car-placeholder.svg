@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title description">
+  <title id="title">Placeholder kendaraan</title>
+  <desc id="description">Siluet mobil pada latar gelap</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#27272a"/><stop offset="1" stop-color="#09090b"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#dc2626"/><stop offset="1" stop-color="#7f1d1d"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <path d="M145 365h45l58-104c15-26 38-40 68-40h169c31 0 57 15 78 44l70 100h24c28 0 51 23 51 51v52H92v-42c0-34 20-56 53-61Z" fill="url(#body)"/>
+  <path d="m291 270-51 95h317l-64-95c-8-12-19-17-34-17H324c-15 0-25 5-33 17Z" fill="#18181b"/>
+  <circle cx="224" cy="460" r="61" fill="#09090b" stroke="#52525b" stroke-width="18"/><circle cx="224" cy="460" r="20" fill="#a1a1aa"/>
+  <circle cx="589" cy="460" r="61" fill="#09090b" stroke="#52525b" stroke-width="18"/><circle cx="589" cy="460" r="20" fill="#a1a1aa"/>
+</svg>

@@ -9,3 +9,7 @@ export function formatRupiah(value: { toString(): string } | string | number) {
 export function formatDate(value: Date) {
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(value);
 }
+
+export function formatMileage(value: number) {
+  return `${new Intl.NumberFormat("id-ID").format(value)} km`;
+}

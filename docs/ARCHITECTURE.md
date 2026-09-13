@@ -2,7 +2,7 @@
 
 ## Shape
 
-The project is one full-stack Next.js App Router application. Route groups separate the public shell from protected admin routes without changing URLs. React Server Components are the default. Client Components are limited to interactive boundaries such as the login form and error recovery.
+The project is one full-stack Next.js App Router application. Route groups separate the public shell from protected admin routes without changing URLs. React Server Components are the default. Client Components are limited to interactive boundaries such as the login form, Homepage dependent brand/model search, and error recovery.
 
 ## Responsibilities
 
@@ -18,10 +18,14 @@ The project is one full-stack Next.js App Router application. Route groups separ
 
 ## Request boundaries
 
-Public routes do not require database access in Phase 0. The `/admin/login` page accepts credentials through a Server Action. Protected admin layouts call `requireAdmin()` server-side before rendering. Every future mutation must repeat authorization and input validation inside its Server Action; hiding a button is not an authorization boundary.
+The Homepage uses dynamic server rendering and reads only presentation-safe fields through `server/homepage/service.ts`. The `/admin/login` page accepts credentials through a Server Action. Protected admin layouts call `requireAdmin()` server-side before rendering. Every mutation repeats authorization and input validation inside its Server Action; hiding a button is not an authorization boundary.
 
 Business rules should live in feature/server services, not JSX. Infrastructure providers must be reached through interfaces so later R2 adoption does not rewrite car-domain behavior.
 
 ## Phase 1 write flow
 
 Client forms invoke dedicated `use server` action modules. Each action re-authorizes the admin and validates untrusted `FormData` before calling `server/cars/service.ts`. The service owns brand/model consistency, Decimal conversion, unique-slug allocation, transactions for cover/order changes, and storage compensation. Pure price, slug, relationship, image-order, and upload rules remain independently testable.
+
+## Phase 2 public read flow
+
+`app/(public)/page.tsx` composes server-provided Homepage data. The service enforces `status = AVAILABLE` for inventory queries, separately requires `featured = true` for featured cars, selects only card fields, resolves media through `StorageProvider`, and converts Prisma Decimal values to strings before crossing the component boundary. Query failures degrade sections to professional empty states. Dealer fallbacks and URL/search presentation rules live in `features/homepage/domain.ts`; only the dependent brand/model selector requires client JavaScript.
