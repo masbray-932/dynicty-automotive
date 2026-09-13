@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CarCondition {
+  NEW
+  USED
+}
+
+enum CarStatus {
+  DRAFT
+  AVAILABLE
+  SOLD
+}
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  adminId   String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+model Brand {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  models    CarModel[]
+  cars      Car[]
+}
+
+model CarModel {
+  id        String   @id @default(cuid())
+  brandId   String
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  cars      Car[]
+
+  @@unique([brandId, slug])
+  @@index([brandId])
+}
+
+model Car {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  condition    CarCondition
+  brandId      String
+  modelId      String
+  variant      String
+  year         Int
+  price        Decimal      @db.Decimal(15, 0)
+  transmission String
+  fuelType     String
+  color        String
+  mileage      Int?
+  description  String       @db.Text
+  status       CarStatus    @default(DRAFT)
+  featured     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  model        CarModel     @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  images       CarImage[]
+
+  @@index([condition, status])
+  @@index([brandId, modelId])
+  @@index([featured, status])
+  @@index([year])
+  @@index([price])
+}
+
+model CarImage {
+  id         String   @id @default(cuid())
+  carId      String
+  storageKey String
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([carId, storageKey])
+  @@index([carId, sortOrder])
+  @@index([carId, isPrimary])
+}
+
+model DealerSettings {
+  id             String   @id @default("default")
+  dealerName     String   @default("Dynicty Automotive")
+  logoStorageKey String?
+  whatsappNumber String?
+  phone          String?
+  email          String?
+  address        String?
+  googleMapsUrl  String?
+  instagramUrl   String?
+  facebookUrl    String?
+  primaryColor   String?
+  secondaryColor String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
