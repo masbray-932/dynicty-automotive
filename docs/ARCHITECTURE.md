@@ -29,3 +29,7 @@ Client forms invoke dedicated `use server` action modules. Each action re-author
 ## Phase 2 public read flow
 
 `app/(public)/page.tsx` composes server-provided Homepage data. The service enforces `status = AVAILABLE` for inventory queries, separately requires `featured = true` for featured cars, selects only card fields, resolves media through `StorageProvider`, and converts Prisma Decimal values to strings before crossing the component boundary. Query failures degrade sections to professional empty states. Dealer fallbacks and URL/search presentation rules live in `features/homepage/domain.ts`; only the dependent brand/model selector requires client JavaScript.
+
+## Phase 3 catalog read flow
+
+`features/catalog/domain.ts` parses untrusted URL values, maps sorting/pagination, validates option dependencies, and builds navigation URLs. `features/catalog/query.ts` constructs the Prisma predicate and unconditionally includes `status = AVAILABLE`. `server/catalog/service.ts` fetches public-aware filter options, validates database relationships, counts results, applies server pagination, selects one ordered image per car, and converts Decimal prices before presentation. `/cars` is server-rendered from URL state and reuses the Phase 2 `VehicleCard`; filters require no client-side fetching.
