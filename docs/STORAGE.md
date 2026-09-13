@@ -17,3 +17,7 @@ Keys use `cars/{carId}/{uniqueSuffix}-{sanitizedFilename}`. Raw client paths are
 ## Future R2 integration
 
 Set `STORAGE_PROVIDER=r2` and all `R2_*` values only after installing an S3-compatible client and implementing the adapter. Credentials remain server-only. Public delivery uses `R2_PUBLIC_URL`; secrets must never enter client bundles.
+
+## Phase 1 implementation
+
+Uploads accept JPEG, PNG, and WEBP up to 8 MB. Both declared MIME and binary signature are checked before storage. The storage object is written first; if the database transaction fails, the object is deleted as compensation. Car/image deletion commits the database change first and then performs idempotent object cleanup. A cleanup failure is surfaced to the admin through an explicit warning so an orphan object is never silently ignored.

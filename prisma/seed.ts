@@ -25,6 +25,26 @@ async function main() {
     create: { id: "default", dealerName: "Dynicty Automotive" },
   });
 
+  const developmentCatalog = [
+    { name: "Toyota", slug: "toyota", model: "Avanza", modelSlug: "avanza" },
+    { name: "Honda", slug: "honda", model: "Brio", modelSlug: "brio" },
+    { name: "Suzuki", slug: "suzuki", model: "XL7", modelSlug: "xl7" },
+    { name: "Mitsubishi", slug: "mitsubishi", model: "Xpander", modelSlug: "xpander" },
+  ];
+
+  for (const item of developmentCatalog) {
+    const brand = await db.brand.upsert({
+      where: { slug: item.slug },
+      update: { name: item.name },
+      create: { name: item.name, slug: item.slug },
+    });
+    await db.carModel.upsert({
+      where: { brandId_slug: { brandId: brand.id, slug: item.modelSlug } },
+      update: { name: item.model },
+      create: { brandId: brand.id, name: item.model, slug: item.modelSlug },
+    });
+  }
+
   console.info(`Admin account ready for ${credentials.email}.`);
 }
 

@@ -34,3 +34,7 @@ Dynicty Automotive Basic Dealer is a responsive single-dealer website for presen
 Shopping cart, checkout, payment gateway, marketplace, multi-seller operation, seller registration, customer accounts, financing application workflow, loan approval, trade-in workflow, test-drive booking, CRM, sales assignment, car comparison, 360-degree vehicle viewer, multi-showroom operation, mobile applications, and push notifications.
 
 Phase 0 contains route placeholders only and does not claim the final features are complete.
+
+## Current delivery status
+
+Phase 1 implements the authenticated admin inventory, brand/model database management, validated create/edit/delete workflows, status changes, and ordered multi-image management. Public homepage, catalog, detail, and WhatsApp experiences remain intentionally deferred.

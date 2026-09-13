@@ -17,3 +17,5 @@ Prices use PostgreSQL `DECIMAL(15,0)`, avoiding floating-point money errors and 
 Development changes use `pnpm db:migrate -- --name descriptive_name`. Review the generated SQL and commit it. Production uses `pnpm db:migrate:deploy`; `prisma db push` is not a production strategy. The initial Phase 0 SQL is committed under `prisma/migrations/`.
 
 The seed upserts one admin and default dealer settings. It requires `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD`; plaintext credentials are never stored.
+
+Phase 1 adds no Prisma model or column. A SQL-only migration adds the partial unique index `CarImage_one_primary_per_car`, enforcing at database level that each car has at most one primary image. Application transactions preserve deterministic contiguous `sortOrder` values during normal reorder/delete operations. The optional seed now adds four small brand/model pairs and no fake car inventory.

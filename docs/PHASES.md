@@ -1,7 +1,7 @@
 # Delivery Phases
 
 1. **Phase 0 — Foundation & Architecture:** application, data, auth, storage, design, route, test, and documentation foundation. Complete.
-2. **Phase 1 — Admin Car CRUD:** validated car management, transactional image handling, and statuses.
+2. **Phase 1 — Admin Car CRUD:** validated car management, brand/model workflows, transactional multi-image handling, and statuses. Complete with environment verification limitations documented in `PHASE_1_REPORT.md`.
 3. **Phase 2 — Homepage:** final conversion-focused public homepage.
 4. **Phase 3 — Car Catalog & Basic Filters:** searchable new/used inventory and basic filters.
 5. **Phase 4 — Car Detail & WhatsApp Sales CTA:** vehicle presentation and tracked direct-contact flow.

@@ -4,6 +4,7 @@ import { logoutAction } from "@/server/auth/actions";
 const links = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/cars", label: "Kelola Mobil" },
+  { href: "/admin/brands", label: "Merek & Model" },
   { href: "/admin/settings", label: "Pengaturan" },
   { href: "/", label: "Lihat Website" },
 ];

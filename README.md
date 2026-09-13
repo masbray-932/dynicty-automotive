@@ -1,6 +1,6 @@
 # Dynicty Automotive
 
-Production-oriented foundation for a single-dealer website that presents new and used cars. This is not a marketplace or checkout application. Phase 0 establishes the architecture, data model, secure admin access, storage boundary, layouts, and quality gates; feature delivery begins in later phases.
+Production-oriented single-dealer application for presenting new and used cars. This is not a marketplace or checkout application. Phase 0 established the foundation; Phase 1 adds authenticated brand/model management, complete car CRUD, status management, and multi-image administration.
 
 ## Stack
 
@@ -58,3 +58,4 @@ Generate a random `SESSION_SECRET` with at least 32 characters. Set strong one-t
 - [Security](docs/SECURITY.md)
 - [Delivery phases](docs/PHASES.md)
 - [Phase 0 report](docs/PHASE_0_REPORT.md)
+- [Phase 1 report](docs/PHASE_1_REPORT.md)
