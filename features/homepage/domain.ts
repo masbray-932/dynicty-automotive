@@ -52,9 +52,13 @@ export function shouldShowMileage(condition: PublicCarCondition, mileage: number
 
 export function normalizeWhatsappNumber(value: string | null | undefined) {
   if (!value) return null;
-  const digits = value.replace(/\D/g, "");
-  if (!digits) return null;
-  return digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
+  const input = value.trim();
+  if (!/^[+\d\s().-]+$/.test(input)) return null;
+  let digits = input.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = `62${digits.slice(1)}`;
+  else if (digits.startsWith("8")) digits = `62${digits}`;
+  return /^\d{10,15}$/.test(digits) ? digits : null;
 }
 
 export function createWhatsappUrl(value: string | null | undefined) {

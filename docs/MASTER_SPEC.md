@@ -37,4 +37,4 @@ Public catalog filtering and vehicle detail remain later-phase foundations and d
 
 ## Current delivery status
 
-Phase 1 implements authenticated inventory administration. Phase 2 adds the production Homepage and reusable public vehicle card. Phase 3 delivers the `/cars` catalog with AVAILABLE-only database queries, validated URL filters, database-derived options, deterministic sorting, server pagination, result counts, filter summaries, and canonical/noindex handling. Final vehicle detail and contextual WhatsApp sales behavior remain deferred.
+Phase 1 implements authenticated inventory administration. Phase 2 adds the production Homepage and reusable public vehicle card. Phase 3 delivers the filtered `/cars` catalog. Phase 4 completes AVAILABLE-only `/cars/[slug]` detail pages with ordered galleries, specifications, DealerSettings contact, contextual WhatsApp CTA, related vehicles, dynamic SEO/Vehicle data, and sitemap entries. Dealer Settings administration and dashboard metrics remain deferred to Phase 5.

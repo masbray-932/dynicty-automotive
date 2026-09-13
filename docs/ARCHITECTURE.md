@@ -33,3 +33,7 @@ Client forms invoke dedicated `use server` action modules. Each action re-author
 ## Phase 3 catalog read flow
 
 `features/catalog/domain.ts` parses untrusted URL values, maps sorting/pagination, validates option dependencies, and builds navigation URLs. `features/catalog/query.ts` constructs the Prisma predicate and unconditionally includes `status = AVAILABLE`. `server/catalog/service.ts` fetches public-aware filter options, validates database relationships, counts results, applies server pagination, selects one ordered image per car, and converts Decimal prices before presentation. `/cars` is server-rendered from URL state and reuses the Phase 2 `VehicleCard`; filters require no client-side fetching.
+
+## Phase 4 detail read flow
+
+`server/car-detail/service.ts` validates a public slug, fetches an exact `status = AVAILABLE` car with selected relations/images, resolves media through `StorageProvider`, converts Decimal values, reads public DealerSettings, and queries three bounded related-vehicle tiers. React request caching shares the service result between metadata and page rendering. `features/car-detail/domain.ts` owns title, visibility, image ordering, SEO text, and encoded WhatsApp rules. Only the thumbnail gallery is a Client Component. The sitemap uses the same server boundary to include AVAILABLE slugs and degrades to static entries if PostgreSQL is unavailable.
