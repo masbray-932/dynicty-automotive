@@ -1,8 +1,11 @@
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
+import { getSiteUrl } from "@/lib/site-url";
 import { getAvailableCarSitemapEntries } from "@/server/car-detail/service";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  await connection();
+  const baseUrl = getSiteUrl();
   const cars = await getAvailableCarSitemapEntries();
   return [
     { url: baseUrl, changeFrequency: "weekly", priority: 1 },

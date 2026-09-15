@@ -23,3 +23,5 @@ Set `STORAGE_PROVIDER=r2` and all `R2_*` values only after installing an S3-comp
 Uploads accept JPEG, PNG, and WEBP up to 8 MB. Both declared MIME and binary signature are checked before storage. The storage object is written first; if the database transaction fails, the object is deleted as compensation. Car/image deletion commits the database change first and then performs idempotent object cleanup. A cleanup failure is surfaced to the admin through an explicit warning so an orphan object is never silently ignored.
 
 Phase 5 logos accept the same verified formats up to 4 MB and use `dealer/logo/<uuid>-<safe-name>`. Replacement compensates on database failure and cleans the prior object after success; removal clears the reference before cleanup and reports warnings.
+
+Phase 6 also applies traversal validation to R2 public URL generation. External media remains unoptimized until the exact production hostname is known; Next Image therefore has no unsafe wildcard host. Local storage is rejected by production environment validation. The R2 adapter's network operations remain a mandatory Phase 7 item.

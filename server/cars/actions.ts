@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/server/auth/session";
+import { logger } from "@/server/log";
 import {
   createCar,
   deleteCarImage,
@@ -21,6 +22,13 @@ import { validateImageUpload } from "@/validation/upload";
 
 const idSchema = z.string().cuid();
 
+function refreshPublicCarRoutes(slug?: string) {
+  revalidatePath("/");
+  revalidatePath("/cars");
+  if (slug) revalidatePath(`/cars/${slug}`);
+  revalidatePath("/sitemap.xml");
+}
+
 function saveError(error: unknown): ActionState {
   if (error instanceof InvalidModelRelationError) return { message: error.message, errors: { modelId: [error.message] } };
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") return { message: "Data mobil tidak ditemukan.", errors: {} };
@@ -34,8 +42,11 @@ export async function createCarAction(_state: ActionState, formData: FormData): 
 
   let id: string;
   try {
-    id = (await createCar(parsed.data)).id;
+    const created = await createCar(parsed.data);
+    id = created.id;
+    refreshPublicCarRoutes(created.slug);
   } catch (error) {
+    logger.error("car.create_failed", { errorType: error instanceof Error ? error.name : "unknown" });
     return saveError(error);
   }
   redirect(`/admin/cars/${id}/edit?notice=created`);
@@ -48,8 +59,10 @@ export async function updateCarAction(id: string, _state: ActionState, formData:
   if (!parsed.success) return { message: "Periksa kembali data mobil.", errors: parsed.error.flatten().fieldErrors };
 
   try {
-    await updateCar(id, parsed.data);
+    const updated = await updateCar(id, parsed.data);
+    refreshPublicCarRoutes(updated.slug);
   } catch (error) {
+    logger.error("car.update_failed", { carId: id, errorType: error instanceof Error ? error.name : "unknown" });
     return saveError(error);
   }
   revalidatePath("/admin/cars");
@@ -61,6 +74,8 @@ export async function deleteCarAction(formData: FormData) {
   await requireAdmin();
   const id = idSchema.parse(formData.get("id"));
   const result = await deleteCarWithMedia(id);
+  refreshPublicCarRoutes();
+  if (result.failedKeys.length) logger.warn("car.media_cleanup_failed", { carId: id, failedCount: result.failedKeys.length });
   if (!result.deleted) redirect("/admin/cars?notice=not-found");
   redirect(`/admin/cars?notice=${result.failedKeys.length ? "deleted-cleanup-warning" : "deleted"}`);
 }
@@ -69,13 +84,18 @@ export async function uploadImageAction(carId: string, _state: ActionState, form
   await requireAdmin();
   if (!idSchema.safeParse(carId).success) return { message: "ID mobil tidak valid.", errors: {} };
   const parsed = await validateImageUpload(formData.get("image"));
-  if (!parsed.success) return { message: "Gambar ditolak.", errors: { image: parsed.error.issues.map((issue) => issue.message) } };
+  if (!parsed.success) {
+    logger.warn("car.image_rejected", { carId });
+    return { message: "Gambar ditolak.", errors: { image: parsed.error.issues.map((issue) => issue.message) } };
+  }
   try {
     await uploadCarImage(carId, parsed.data);
   } catch {
+    logger.error("car.image_upload_failed", { carId });
     return { message: "Gambar gagal diunggah. Tidak ada data parsial yang disimpan.", errors: {} };
   }
   revalidatePath(`/admin/cars/${carId}/edit`);
+  refreshPublicCarRoutes();
   return { message: "Gambar berhasil diunggah.", errors: {} };
 }
 
@@ -85,6 +105,7 @@ export async function setPrimaryImageAction(formData: FormData) {
   const imageId = idSchema.parse(formData.get("imageId"));
   await setPrimaryImage(carId, imageId);
   revalidatePath(`/admin/cars/${carId}/edit`);
+  refreshPublicCarRoutes();
 }
 
 export async function reorderImageAction(formData: FormData) {
@@ -94,6 +115,7 @@ export async function reorderImageAction(formData: FormData) {
   const direction = z.enum(["up", "down"]).parse(formData.get("direction"));
   await reorderCarImage(carId, imageId, direction);
   revalidatePath(`/admin/cars/${carId}/edit`);
+  refreshPublicCarRoutes();
 }
 
 export async function deleteImageAction(formData: FormData) {
@@ -102,5 +124,7 @@ export async function deleteImageAction(formData: FormData) {
   const imageId = idSchema.parse(formData.get("imageId"));
   const result = await deleteCarImage(carId, imageId);
   revalidatePath(`/admin/cars/${carId}/edit`);
+  refreshPublicCarRoutes();
+  if (result.storageCleanupFailed) logger.warn("car.image_cleanup_failed", { carId, imageId });
   redirect(`/admin/cars/${carId}/edit?notice=${result.storageCleanupFailed ? "image-cleanup-warning" : "image-deleted"}`);
 }

@@ -6,19 +6,20 @@ import { PageContainer } from "@/components/ui/page-container";
 import { createWhatsappUrl } from "@/features/homepage/domain";
 import { QuickSearch } from "@/features/homepage/quick-search";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
-import { getHomepageData } from "@/server/homepage/service";
+import { getDealerPresentation, getHomepageData } from "@/server/homepage/service";
 
-export const metadata: Metadata = {
-  title: "Dealer Mobil Baru & Bekas",
-  description: "Temukan pilihan mobil baru dan bekas berkualitas dengan informasi yang jelas dan proses yang mudah bersama Dynicty Automotive.",
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    title: "Dynicty Automotive — Dealer Mobil Baru & Bekas",
-    description: "Jelajahi mobil baru, mobil bekas, kendaraan unggulan, dan pilihan berdasarkan merek.",
-    url: "/",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  await connection();
+  const dealer = await getDealerPresentation();
+  const title = `${dealer.dealerName} — Mobil Baru & Bekas`;
+  const description = `Jelajahi mobil baru dan bekas yang tersedia dari ${dealer.dealerName}.`;
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: "/" },
+    openGraph: { type: "website", title, description, url: "/", ...(dealer.logoUrl ? { images: [{ url: dealer.logoUrl, alt: `Logo ${dealer.dealerName}` }] } : {}) },
+  };
+}
 
 function SectionHeading({ eyebrow, title, copy }: { eyebrow: string; title: string; copy?: string }) {
   return (
@@ -110,7 +111,7 @@ export default async function HomePage() {
       <section className="pb-20" id="contact"><PageContainer>
         <div className="rounded-3xl bg-[var(--accent)] p-8 sm:p-12 lg:flex lg:items-center lg:justify-between lg:gap-10">
           <div><p className="text-sm font-bold uppercase tracking-[0.18em] text-red-100">{dealer.dealerName}</p><h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">Siap menemukan mobil pilihan Anda?</h2><p className="mt-4 max-w-2xl text-red-100">Hubungi dealer untuk informasi kendaraan dan langkah berikutnya.</p><div className="mt-5 flex flex-wrap gap-4 text-sm text-white">{dealer.phone ? <span>{dealer.phone}</span> : null}{dealer.email ? <a href={`mailto:${dealer.email}`}>{dealer.email}</a> : null}{dealer.address ? <span>{dealer.address}</span> : null}</div></div>
-          <div className="mt-8 lg:mt-0">{whatsappUrl ? <a className="inline-flex min-h-12 items-center rounded-xl bg-white px-6 font-bold text-red-700 hover:bg-red-50" href={whatsappUrl} rel="noreferrer" target="_blank">Chat via WhatsApp</a> : <Link className="inline-flex min-h-12 items-center rounded-xl bg-white px-6 font-bold text-red-700 hover:bg-red-50" href="/cars">Jelajahi Mobil</Link>}</div>
+          <div className="mt-8 lg:mt-0">{whatsappUrl ? <a className="inline-flex min-h-12 items-center rounded-xl bg-white px-6 font-bold text-red-700 hover:bg-red-50" href={whatsappUrl} rel="noopener noreferrer" target="_blank">Chat via WhatsApp</a> : <Link className="inline-flex min-h-12 items-center rounded-xl bg-white px-6 font-bold text-red-700 hover:bg-red-50" href="/cars">Jelajahi Mobil</Link>}</div>
         </div>
       </PageContainer></section>
     </>

@@ -1,8 +1,10 @@
 import "server-only";
 
+import { cache } from "react";
 import { db } from "@/db/client";
 import { HOMEPAGE_CAR_LIMIT, dealerFallback, mergeDealerPresentation, selectFeaturedHomepageCars } from "@/features/homepage/domain";
 import { getStorageProvider } from "@/services/storage";
+import { logger } from "@/server/log";
 
 export type HomepageCar = {
   id: string;
@@ -82,7 +84,7 @@ function toHomepageCar(car: {
   };
 }
 
-export async function getDealerPresentation() {
+export const getDealerPresentation = cache(async () => {
   try {
     const settings = await db.dealerSettings.findUnique({ where: { id: "default" } });
     if (!settings) return dealerFallback;
@@ -96,9 +98,10 @@ export async function getDealerPresentation() {
     }
     return mergeDealerPresentation(settings, logoUrl);
   } catch {
+    logger.error("public.dealer_settings_read_failed");
     return dealerFallback;
   }
-}
+});
 
 async function getFeaturedCars() {
   const cars = await db.car.findMany({
@@ -150,6 +153,7 @@ async function safely<T>(operation: () => Promise<T>, fallback: T) {
   try {
     return await operation();
   } catch {
+    logger.error("public.homepage_query_failed");
     return fallback;
   }
 }

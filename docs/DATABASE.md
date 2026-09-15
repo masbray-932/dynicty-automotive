@@ -21,3 +21,5 @@ The seed upserts one admin and default dealer settings. It requires `ADMIN_EMAIL
 Phase 1 adds no Prisma model or column. A SQL-only migration adds the partial unique index `CarImage_one_primary_per_car`, enforcing at database level that each car has at most one primary image. Application transactions preserve deterministic contiguous `sortOrder` values during normal reorder/delete operations. The optional seed now adds four small brand/model pairs and no fake car inventory.
 
 Phase 5 preserves the schema and upserts DealerSettings exclusively against fixed ID `default`; no settings rows or migration are added. Dashboard metrics use database counts/grouping and do not alter public visibility.
+
+Phase 6 adds the real migration `20260914000000_phase_6_query_hardening`. Its `(status, updatedAt)` index directly supports latest AVAILABLE inventory and bounded sitemap ordering. Existing unique session digest and expiry indexes already support lookup and cleanup, so no speculative session index was added.

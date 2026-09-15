@@ -21,6 +21,10 @@ export type CatalogFilters = {
 
 export type ParsedCatalogFilters = { filters: CatalogFilters; issues: string[] };
 
+export function isCatalogIndexable(raw: RawCatalogSearchParams) {
+  return !Object.values(raw).some((value) => value !== undefined && value !== "");
+}
+
 const firstValue = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 const slugSchema = z.string().trim().min(1).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 const textSchema = z.string().trim().min(1).max(100);
@@ -88,7 +92,7 @@ export function parseCatalogFilters(raw: RawCatalogSearchParams, currentYear = n
 
   const pageValue = firstValue(raw.page);
   if (pageValue) {
-    const page = z.coerce.number().int().positive().max(100000).safeParse(pageValue);
+    const page = z.coerce.number().int().positive().max(1000).safeParse(pageValue);
     if (page.success && /^\d+$/.test(pageValue)) filters.page = page.data;
     else issues.push("Halaman tidak valid; halaman pertama digunakan.");
   }

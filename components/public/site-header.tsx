@@ -14,7 +14,7 @@ const links = [
 function Brand({ dealer }: { dealer: DealerPresentation }) {
   return (
     <Link className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-red-500" href="/">
-      {dealer.logoUrl ? <Image alt={`Logo ${dealer.dealerName}`} className="h-10 w-10 rounded-lg object-contain" height={40} src={dealer.logoUrl} unoptimized width={40} /> : <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-lg font-black text-white">D</span>}
+      {dealer.logoUrl ? <Image alt={`Logo ${dealer.dealerName}`} className="h-10 w-10 rounded-lg object-contain" height={40} src={dealer.logoUrl} unoptimized={dealer.logoUrl.startsWith("http")} width={40} /> : <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-lg font-black text-white">D</span>}
       <span className="truncate text-sm font-black tracking-tight text-white sm:text-base">{dealer.dealerName}</span>
     </Link>
   );
@@ -32,7 +32,7 @@ export function SiteHeader({ dealer }: { dealer: DealerPresentation }) {
           </ul>
         </nav>
         <div className="hidden lg:block">
-          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-xl bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500" href={whatsappUrl} rel="noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-bold text-white hover:bg-white/10" href="/#contact">Hubungi Kami</Link>}
+          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-xl bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500" href={whatsappUrl} rel="noopener noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-bold text-white hover:bg-white/10" href="/#contact">Hubungi Kami</Link>}
         </div>
         <details className="group relative lg:hidden">
           <summary aria-label="Buka menu navigasi" className="grid min-h-11 min-w-11 cursor-pointer list-none place-items-center rounded-xl border border-white/15 text-white focus-visible:outline-2 focus-visible:outline-red-500">
@@ -41,7 +41,7 @@ export function SiteHeader({ dealer }: { dealer: DealerPresentation }) {
           <nav aria-label="Navigasi seluler" className="absolute right-0 top-14 w-64 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 p-2 shadow-2xl">
             <ul className="grid">
               {links.map((link) => <li key={link.href}><Link className="block min-h-11 rounded-xl px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-red-500" href={link.href}>{link.label}</Link></li>)}
-              {whatsappUrl ? <li className="mt-2"><a className="block min-h-11 rounded-xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white" href={whatsappUrl} rel="noreferrer" target="_blank">WhatsApp</a></li> : null}
+              {whatsappUrl ? <li className="mt-2"><a className="block min-h-11 rounded-xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white" href={whatsappUrl} rel="noopener noreferrer" target="_blank">WhatsApp</a></li> : null}
             </ul>
           </nav>
         </details>

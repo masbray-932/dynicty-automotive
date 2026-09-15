@@ -41,3 +41,7 @@ Client forms invoke dedicated `use server` action modules. Each action re-author
 ## Phase 5 administration flow
 
 Protected settings UI calls authenticated Server Actions, validates with Zod, and upserts fixed `DealerSettings.id = "default"`. Logo storage uses `dealer/logo/` keys with compensation and best-effort old-object cleanup. Targeted revalidation refreshes public consumers. Public layout maps validated colors to CSS variables. The dashboard service runs counts, grouping, and recent reads in parallel and returns an explicit error variant instead of invented zeroes.
+
+## Phase 6 hardening boundaries
+
+`lib/site-url.ts` centralizes public origins, `lib/security-headers.ts` owns testable header policy, `server/auth/login-limiter.ts` provides bounded single-process abuse protection, and `server/log.ts` is the redacted observability seam. Production configuration is validated from `instrumentation.ts`. Public DB routes are intentionally request-time, while admin responses are explicitly private/no-store.

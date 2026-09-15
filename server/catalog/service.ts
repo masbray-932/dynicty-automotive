@@ -11,6 +11,7 @@ import {
 import { buildCatalogWhere } from "@/features/catalog/query";
 import type { HomepageCar } from "@/server/homepage/service";
 import { getStorageProvider } from "@/services/storage";
+import { logger } from "@/server/log";
 
 export type CatalogBrandOption = {
   name: string;
@@ -59,6 +60,7 @@ function imageUrl(storageKey: string | undefined) {
   try {
     return getStorageProvider().publicUrl(storageKey);
   } catch {
+    logger.error("public.catalog_query_failed");
     return null;
   }
 }

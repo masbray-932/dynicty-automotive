@@ -6,7 +6,7 @@
 4. **Phase 3 — Car Catalog & Basic Filters:** URL-driven AVAILABLE inventory with condition, brand/model, price, year, transmission, keyword, sorting, counts, and server pagination. Complete with environment limitations documented in `PHASE_3_REPORT.md`.
 5. **Phase 4 — Car Detail & WhatsApp Sales CTA:** AVAILABLE-only detail, gallery, specifications, related vehicles, contextual direct-contact flow, dynamic metadata, structured data, and sitemap entries. Complete with environment limitations documented in `PHASE_4_REPORT.md`.
 6. **Phase 5 — Dealer Settings & Admin Dashboard:** configurable singleton identity/contact/logo/colors plus real inventory metrics, recent cars, and shortcuts. Complete with environment limitations documented in `PHASE_5_REPORT.md`.
-7. **Phase 6 — SEO, Performance & Security Hardening:** dynamic vehicle metadata, structured data, caching, observability, and security controls.
+7. **Phase 6 — SEO, Performance & Security Hardening:** canonical/metadata controls, safe structured data, sitemap/robots, headers, login/session hardening, observability, performance review, and production validation. Complete with environment and dependency limitations documented in `PHASE_6_REPORT.md`.
 8. **Phase 7 — Full QA & Production Deployment:** complete functional, responsive, accessibility, browser, migration, backup, and deployment verification.
 
 Phase 6 should harden the completed Basic Dealer product without expanding into deferred CRM/marketplace scope.

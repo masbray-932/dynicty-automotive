@@ -1,0 +1,21 @@
+[Unit]
+Description=Dynicty Automotive Preview
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dynicty
+Group=dynicty
+WorkingDirectory=/var/www/dynicty-automotive-preview
+EnvironmentFile=/etc/dynicty-automotive-preview.env
+ExecStart=/REPLACE_WITH_PNPM_PATH/pnpm exec next start -H 127.0.0.1 -p 3101
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGINT
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

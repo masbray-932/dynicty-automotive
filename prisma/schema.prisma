@@ -86,6 +86,7 @@ model Car {
   images       CarImage[]
 
   @@index([condition, status])
+  @@index([status, updatedAt])
   @@index([brandId, modelId])
   @@index([featured, status])
   @@index([year])

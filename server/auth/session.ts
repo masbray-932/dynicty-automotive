@@ -4,10 +4,12 @@ import { createHmac, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
+import { isSessionExpired } from "@/features/auth/session";
 import { getServerEnv } from "@/server/env";
 
 const COOKIE_NAME = "dynicty_admin_session";
 const SESSION_LENGTH_MS = 1000 * 60 * 60 * 24 * 7;
+const EXPIRED_SESSION_CLEANUP_LIMIT = 100;
 
 function tokenHash(token: string) {
   return createHmac("sha256", getServerEnv().SESSION_SECRET)
@@ -19,9 +21,13 @@ export async function createAdminSession(adminId: string) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_LENGTH_MS);
 
-  await db.adminSession.create({
-    data: { adminId, tokenHash: tokenHash(token), expiresAt },
-  });
+  await db.$transaction([
+    db.adminSession.deleteMany({
+      where: { expiresAt: { lte: new Date() } },
+      limit: EXPIRED_SESSION_CLEANUP_LIMIT,
+    }),
+    db.adminSession.create({ data: { adminId, tokenHash: tokenHash(token), expiresAt } }),
+  ]);
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
@@ -30,6 +36,7 @@ export async function createAdminSession(adminId: string) {
     secure: process.env.NODE_ENV === "production",
     path: "/",
     expires: expiresAt,
+    maxAge: Math.floor(SESSION_LENGTH_MS / 1000),
   });
 }
 
@@ -42,7 +49,11 @@ export async function getCurrentAdmin() {
     include: { admin: { select: { id: true, email: true } } },
   });
 
-  if (!session || session.expiresAt <= new Date()) return null;
+  if (!session) return null;
+  if (isSessionExpired(session.expiresAt)) {
+    await db.adminSession.deleteMany({ where: { id: session.id } }).catch(() => undefined);
+    return null;
+  }
   return session.admin;
 }
 
@@ -63,4 +74,11 @@ export async function destroyAdminSession() {
   }
 
   cookieStore.delete(COOKIE_NAME);
+}
+
+export async function cleanupExpiredAdminSessions(now = new Date()) {
+  return db.adminSession.deleteMany({
+    where: { expiresAt: { lte: now } },
+    limit: EXPIRED_SESSION_CLEANUP_LIMIT,
+  });
 }

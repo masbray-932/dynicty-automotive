@@ -6,6 +6,7 @@ import { buildVehicleTitle, isValidCarSlug, orderDetailImages } from "@/features
 import type { HomepageCar } from "@/server/homepage/service";
 import { getDealerPresentation } from "@/server/homepage/service";
 import { getStorageProvider } from "@/services/storage";
+import { logger } from "@/server/log";
 
 export type PublicCarDetail = {
   slug: string;
@@ -76,14 +77,16 @@ export const getCarDetailPageData = cache(async (slug: string) => {
     };
     return { kind: "success" as const, car: detail, dealer, related };
   } catch {
+    logger.error("public.car_detail_query_failed");
     return { kind: "error" as const };
   }
 });
 
 export async function getAvailableCarSitemapEntries() {
   try {
-    return await db.car.findMany({ where: { status: "AVAILABLE" }, orderBy: { updatedAt: "desc" }, select: { slug: true, updatedAt: true } });
+    return await db.car.findMany({ where: { status: "AVAILABLE" }, orderBy: { updatedAt: "desc" }, take: 5000, select: { slug: true, updatedAt: true } });
   } catch {
+    logger.error("public.sitemap_query_failed");
     return [];
   }
 }

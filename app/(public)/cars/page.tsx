@@ -3,7 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { PageContainer } from "@/components/ui/page-container";
 import { ActiveFilters, CatalogFilterForm, CatalogPagination, SortControl } from "@/features/catalog/catalog-controls";
-import { buildCatalogUrl, parseCatalogFilters, type RawCatalogSearchParams } from "@/features/catalog/domain";
+import { buildCatalogUrl, isCatalogIndexable, parseCatalogFilters, type RawCatalogSearchParams } from "@/features/catalog/domain";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { getCatalogData } from "@/server/catalog/service";
 
@@ -11,12 +11,13 @@ type PageProps = { searchParams: Promise<RawCatalogSearchParams> };
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const raw = await searchParams;
-  const filtered = Object.values(raw).some((value) => value !== undefined && value !== "");
+  const indexable = isCatalogIndexable(raw);
   return {
     title: "Daftar Mobil Baru & Bekas",
     description: "Jelajahi daftar mobil baru dan bekas yang tersedia serta gunakan filter untuk menemukan pilihan yang sesuai.",
     alternates: { canonical: "/cars" },
-    robots: filtered ? { index: false, follow: true } : { index: true, follow: true },
+    openGraph: { type: "website", title: "Daftar Mobil Baru & Bekas", description: "Jelajahi mobil baru dan bekas yang tersedia.", url: "/cars" },
+    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
   };
 }
 

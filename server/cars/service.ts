@@ -44,11 +44,11 @@ async function carData(values: CarFormValues, excludeId?: string) {
 }
 
 export async function createCar(values: CarFormValues) {
-  return db.car.create({ data: await carData(values), select: { id: true } });
+  return db.car.create({ data: await carData(values), select: { id: true, slug: true } });
 }
 
 export async function updateCar(id: string, values: CarFormValues) {
-  return db.car.update({ where: { id }, data: await carData(values, id), select: { id: true } });
+  return db.car.update({ where: { id }, data: await carData(values, id), select: { id: true, slug: true } });
 }
 
 export async function deleteCarWithMedia(id: string) {

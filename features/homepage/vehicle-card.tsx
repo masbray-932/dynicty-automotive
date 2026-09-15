@@ -10,7 +10,7 @@ export function VehicleCard({ car }: { car: HomepageCar }) {
     <article className="group overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 transition hover:-translate-y-1 hover:border-red-500/50">
       <Link className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500" href={`/cars/${car.slug}`}>
         <div className="relative aspect-[4/3] overflow-hidden bg-zinc-800">
-          <Image alt={car.imageUrl ? title : `Placeholder gambar ${title}`} className="object-cover transition duration-300 group-hover:scale-[1.03]" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" src={car.imageUrl ?? "/images/car-placeholder.svg"} unoptimized={Boolean(car.imageUrl)} />
+          <Image alt={car.imageUrl ? title : `Placeholder gambar ${title}`} className="object-cover transition duration-300 group-hover:scale-[1.03]" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" src={car.imageUrl ?? "/images/car-placeholder.svg"} unoptimized={Boolean(car.imageUrl?.startsWith("http"))} />
           <span className="absolute left-3 top-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-white backdrop-blur">
             {car.condition === "NEW" ? "BARU" : "BEKAS"}
           </span>
