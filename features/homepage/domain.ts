@@ -10,6 +10,7 @@ export type DealerPresentation = {
   phone: string | null;
   email: string | null;
   address: string | null;
+  googleMapsUrl?: string | null;
   instagramUrl: string | null;
   facebookUrl: string | null;
   primaryColor: string | null;
@@ -23,6 +24,7 @@ export const dealerFallback: DealerPresentation = {
   phone: null,
   email: null,
   address: null,
+  googleMapsUrl: null,
   instagramUrl: null,
   facebookUrl: null,
   primaryColor: null,
@@ -103,6 +105,7 @@ export function mergeDealerPresentation(
     phone: clean(settings?.phone),
     email: clean(settings?.email),
     address: clean(settings?.address),
+    googleMapsUrl: clean(settings?.googleMapsUrl),
     instagramUrl: clean(settings?.instagramUrl),
     facebookUrl: clean(settings?.facebookUrl),
     primaryColor: clean(settings?.primaryColor),

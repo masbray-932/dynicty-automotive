@@ -6,10 +6,12 @@ import { CarForm } from "@/features/cars/car-form";
 import { ImageManager } from "@/features/cars/image-manager";
 import { updateCarAction } from "@/server/cars/actions";
 import { getStorageProvider } from "@/services/storage";
+import { requireAdmin } from "@/server/auth/session";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> };
 
 export default async function EditCarPage({ params, searchParams }: PageProps) {
+  await requireAdmin();
   await connection();
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const [car, brands] = await Promise.all([

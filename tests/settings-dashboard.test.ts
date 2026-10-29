@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dealerSettingsSchema, MAX_LOGO_SIZE, validateLogoUpload } from "@/validation/dealer-settings";
 import { mapDashboardCounts, projectRecentVehicles } from "@/features/dashboard/domain";
 import { mergeDealerPresentation } from "@/features/homepage/domain";
+import { imageFile } from "./fixtures/images";
 
 const valid = { dealerName: "  Dealer Maju  ", phone: "+62 21 555-0101", whatsappNumber: "081234567890", email: " SALES@EXAMPLE.COM ", address: "Jalan Utama\nJakarta", googleMapsUrl: "https://maps.google.com/test", instagramUrl: "https://instagram.com/dealer", facebookUrl: "https://facebook.com/dealer", primaryColor: "#dc2626", secondaryColor: "#18181b" };
 
@@ -29,7 +30,7 @@ describe("DealerSettings validation", () => {
     expect(mergeDealerPresentation(null).dealerName).toBe("Dynicty Automotive");
   });
   it("validates logo size, MIME type, and binary signature", async () => {
-    const png = new File([new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0,0,0])], "logo.png", { type: "image/png" });
+    const png = imageFile("png", "logo.png");
     expect((await validateLogoUpload(png)).success).toBe(true);
     const executable = new File(["MZ executable"], "logo.png", { type: "image/png" });
     expect((await validateLogoUpload(executable)).success).toBe(false);

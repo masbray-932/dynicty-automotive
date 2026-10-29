@@ -122,4 +122,47 @@ model DealerSettings {
   secondaryColor String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  content        DealerContent?
+  contentItems   DealerContentItem[]
+}
+
+enum DealerContentKind {
+  MAIN_BANNER
+  PROMO_BANNER
+  ADVANTAGE
+  FAQ
+  LEASING_PARTNER
+}
+
+model DealerContent {
+  dealerId         String @id
+  welcomeTitle     String @default("")
+  welcomeBody      String @default("") @db.Text
+  welcomeActive    Boolean @default(false)
+  aboutSummary     String @default("") @db.Text
+  aboutStory       String @default("") @db.Text
+  aboutActive      Boolean @default(false)
+  showroomKey      String?
+  showroomAlt      String @default("")
+  operatingHours   String @default("") @db.Text
+  operatingHoursActive Boolean @default(false)
+  updatedAt        DateTime @updatedAt
+  dealer           DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+}
+
+model DealerContentItem {
+  id         String @id @default(cuid())
+  dealerId   String
+  kind       DealerContentKind
+  title      String
+  body       String @default("") @db.Text
+  link       String @default("")
+  mediaKey   String?
+  active     Boolean @default(false)
+  sortOrder  Int @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  dealer     DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+
+  @@index([dealerId, kind, active, sortOrder])
 }

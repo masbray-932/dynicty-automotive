@@ -1,15 +1,10 @@
+import { shouldBypassImageOptimization } from "@/lib/image-delivery";
+import Image from "next/image";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/page-container";
-import type { DealerPresentation } from "@/features/homepage/domain";
-
-export function SiteFooter({ dealer }: { dealer: DealerPresentation }) {
-  return (
-    <footer className="border-t border-white/10 bg-black py-10">
-      <PageContainer className="grid gap-8 text-sm text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
-        <div><p className="font-bold text-white">{dealer.dealerName}</p><p className="mt-2 max-w-sm">Pilihan mobil baru dan bekas dalam satu pengalaman dealer yang praktis.</p></div>
-        <nav aria-label="Navigasi footer"><p className="font-bold text-white">Jelajahi</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2"><Link href="/cars?condition=NEW">Mobil Baru</Link><Link href="/cars?condition=USED">Mobil Bekas</Link><Link href="/cars">Semua Mobil</Link></div></nav>
-        <div className="lg:text-right"><p>© {new Date().getFullYear()} {dealer.dealerName}.</p><p className="mt-2">Informasi kendaraan dapat berubah. Hubungi dealer untuk konfirmasi.</p></div>
-      </PageContainer>
-    </footer>
-  );
+import { createWhatsappUrl, type DealerPresentation } from "@/features/homepage/domain";
+export function SiteFooter({dealer,hours}:{dealer:DealerPresentation;hours?:string}) {
+  const wa=createWhatsappUrl(dealer.whatsappNumber);
+  const links=[["Google Maps",dealer.googleMapsUrl],["Instagram",dealer.instagramUrl],["Facebook",dealer.facebookUrl],["WhatsApp",wa]];
+  return <footer className="border-t border-white/10 bg-black py-10"><PageContainer className="grid gap-8 text-sm text-zinc-400 sm:grid-cols-2 lg:grid-cols-3"><div>{dealer.logoUrl?<Image src={dealer.logoUrl} width={64} height={64} alt={`Logo ${dealer.dealerName}`} unoptimized={shouldBypassImageOptimization(dealer.logoUrl)} className="mb-3 h-16 w-16 object-contain" />:null}<p className="font-bold text-white">{dealer.dealerName}</p>{dealer.address?<p className="mt-3 whitespace-pre-line">{dealer.address}</p>:null}{dealer.phone?<a className="block min-h-11 py-2 focus-visible:outline-2 focus-visible:outline-white" href={`tel:${dealer.phone.replace(/[^+\d]/g,"")}`}>{dealer.phone}</a>:null}{dealer.email?<a href={`mailto:${dealer.email}`} className="block min-h-11 break-all py-2 focus-visible:outline-2 focus-visible:outline-white">{dealer.email}</a>:null}</div><nav aria-label="Navigasi footer"><p className="font-bold text-white">Jelajahi</p><div className="mt-3 grid gap-2"><Link href="/about">Tentang Kami</Link><Link href="/cars?condition=NEW">Mobil Baru</Link><Link href="/cars?condition=USED">Mobil Bekas</Link><Link href="/cars">Semua Mobil</Link></div><div className="mt-4 flex flex-wrap gap-4">{links.map(([label,url])=>url?<a key={label} href={url} rel="noopener noreferrer" target="_blank" className="min-h-11 py-2 focus-visible:outline-2 focus-visible:outline-white">{label}</a>:null)}</div></nav><div>{hours?.trim()?<><p className="font-bold text-white">Jam Operasional</p><p className="mt-3 whitespace-pre-line">{hours}</p></>:null}<p className="mt-4">© {new Date().getFullYear()} {dealer.dealerName}.</p><p className="mt-2">Informasi kendaraan dapat berubah. Hubungi dealer untuk konfirmasi.</p></div></PageContainer></footer>;
 }

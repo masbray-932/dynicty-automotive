@@ -14,13 +14,13 @@ export function ImageManager({ carId, images }: { carId: string; images: ImageIt
     <div className="space-y-6">
       <form action={uploadAction} className="rounded-xl border border-dashed border-white/20 p-4">
         <label className="block text-sm font-medium text-white" htmlFor="image">Tambah gambar kendaraan</label>
-        <p className="mt-1 text-xs text-zinc-400">JPEG, PNG, atau WEBP. Maksimal 8 MB.</p>
+        <p className="mt-1 text-xs text-zinc-400">JPEG, PNG, atau WEBP statis. Maksimal 8 MiB dan 25 megapiksel.</p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input accept="image/jpeg,image/png,image/webp" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/30 p-2 text-sm" id="image" name="image" required type="file" />
+          <input accept="image/jpeg,image/png,image/webp" aria-describedby={state.errors.image?.[0] ? "image-error" : undefined} aria-invalid={state.errors.image?.[0] ? true : undefined} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/30 p-2 text-sm" id="image" name="image" required type="file" />
           <Button disabled={pending} type="submit">{pending ? "Mengunggah…" : "Unggah"}</Button>
         </div>
         {state.message ? <p aria-live="polite" className="mt-3 text-sm text-zinc-300">{state.message}</p> : null}
-        {state.errors.image?.[0] ? <p className="mt-1 text-sm text-red-300">{state.errors.image[0]}</p> : null}
+        {state.errors.image?.[0] ? <p className="mt-1 text-sm text-red-300" id="image-error" role="alert">{state.errors.image[0]}</p> : null}
       </form>
 
       {images.length === 0 ? <p className="rounded-xl border border-white/10 p-5 text-sm text-zinc-400">Belum ada gambar. Gambar pertama otomatis menjadi cover.</p> : (

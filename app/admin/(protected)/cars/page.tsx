@@ -8,10 +8,12 @@ import { db } from "@/db/client";
 import { DeleteCarButton } from "@/features/cars/delete-car-button";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { getStorageProvider } from "@/services/storage";
+import { requireAdmin } from "@/server/auth/session";
 
 const statusLabels = { DRAFT: "Draft", AVAILABLE: "Tersedia", SOLD: "Terjual" } as const;
 
 export default async function AdminCarsPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; notice?: string }> }) {
+  await requireAdmin();
   await connection();
   const query = await searchParams;
   const status = Object.values(CarStatus).includes(query.status as CarStatus) ? query.status as CarStatus : undefined;

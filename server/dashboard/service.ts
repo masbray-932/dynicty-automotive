@@ -2,8 +2,11 @@ import "server-only";
 import { db } from "@/db/client";
 import { mapDashboardCounts, projectRecentVehicles } from "@/features/dashboard/domain";
 import { buildVehicleTitle } from "@/features/car-detail/domain";
+import { requireAdmin } from "@/server/auth/session";
 
 export async function getDashboardData() {
+  // Keep redirects outside the data-error fallback: denial must stop serialization.
+  await requireAdmin();
   try {
     const [total, statusRows, conditionRows, featured, recentRows] = await Promise.all([
       db.car.count(),

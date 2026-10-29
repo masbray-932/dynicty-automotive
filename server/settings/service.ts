@@ -3,10 +3,12 @@ import { db } from "@/db/client";
 import { getStorageProvider } from "@/services/storage";
 import { createDealerLogoKey } from "@/services/storage/key";
 import type { DealerSettingsValues } from "@/validation/dealer-settings";
+import { requireAdmin } from "@/server/auth/session";
 
 export const DEALER_SETTINGS_ID = "default";
 
 export async function getAdminDealerSettings() {
+  await requireAdmin();
   try {
     const settings = await db.dealerSettings.findUnique({ where: { id: DEALER_SETTINGS_ID } });
     if (!settings) return { kind: "success" as const, settings: null, logoUrl: null };
@@ -16,16 +18,18 @@ export async function getAdminDealerSettings() {
   } catch { return { kind: "error" as const }; }
 }
 
-export function upsertDealerSettings(values: DealerSettingsValues) {
+export async function upsertDealerSettings(values: DealerSettingsValues) {
+  await requireAdmin();
   return db.dealerSettings.upsert({ where: { id: DEALER_SETTINGS_ID }, create: { id: DEALER_SETTINGS_ID, ...values }, update: values });
 }
 
 export async function replaceDealerLogo(file: File) {
+  await requireAdmin();
   const storage = getStorageProvider();
-  const key = createDealerLogoKey(file.name);
-  await storage.put({ key, body: new Uint8Array(await file.arrayBuffer()), contentType: file.type });
+  const key = createDealerLogoKey(file.name, crypto.randomUUID(), file.type);
   let oldKey: string | null = null;
   try {
+    await storage.put({ key, body: new Uint8Array(await file.arrayBuffer()), contentType: file.type });
     const updated = await db.$transaction(async (transaction) => {
       const existing = await transaction.dealerSettings.findUnique({ where: { id: DEALER_SETTINGS_ID }, select: { logoStorageKey: true } });
       oldKey = existing?.logoStorageKey ?? null;
@@ -40,6 +44,7 @@ export async function replaceDealerLogo(file: File) {
 }
 
 export async function removeDealerLogo() {
+  await requireAdmin();
   const settings = await db.dealerSettings.findUnique({ where: { id: DEALER_SETTINGS_ID }, select: { logoStorageKey: true } });
   if (!settings?.logoStorageKey) return { cleanupFailed: false };
   await db.dealerSettings.update({ where: { id: DEALER_SETTINGS_ID }, data: { logoStorageKey: null } });

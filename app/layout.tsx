@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { themeCssVariables } from "@/features/theme/domain";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full overflow-x-hidden bg-zinc-950 text-zinc-100">{children}</body>
+      <body className="min-h-full overflow-x-hidden bg-background text-foreground" style={themeCssVariables()}>{children}</body>
     </html>
   );
 }

@@ -1,8 +1,10 @@
 import { connection } from "next/server";
 import { DealerSettingsForm } from "@/features/settings/dealer-settings-form";
 import { getAdminDealerSettings } from "@/server/settings/service";
+import { requireAdmin } from "@/server/auth/session";
 
 export default async function AdminSettingsPage() {
+  await requireAdmin();
   await connection();
   const result = await getAdminDealerSettings();
   if (result.kind === "error") return <section><h1 className="text-3xl font-bold text-white">Pengaturan Dealer</h1><div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-6"><h2 className="font-bold text-white">Pengaturan tidak dapat dimuat</h2><p className="mt-2 text-sm text-zinc-300">Silakan coba kembali beberapa saat lagi.</p></div></section>;

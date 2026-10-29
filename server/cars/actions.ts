@@ -19,6 +19,8 @@ import {
 import type { ActionState } from "@/types/action-state";
 import { carFormData, carFormSchema } from "@/validation/car";
 import { validateImageUpload } from "@/validation/upload";
+import { reportUploadFailure } from "@/server/upload-feedback";
+import { actionResult } from "@/types/action-state";
 
 const idSchema = z.string().cuid();
 
@@ -67,7 +69,7 @@ export async function updateCarAction(id: string, _state: ActionState, formData:
   }
   revalidatePath("/admin/cars");
   revalidatePath(`/admin/cars/${id}/edit`);
-  return { message: "Perubahan berhasil disimpan.", errors: {} };
+  return actionResult("success", "Perubahan berhasil disimpan.");
 }
 
 export async function deleteCarAction(formData: FormData) {
@@ -90,13 +92,18 @@ export async function uploadImageAction(carId: string, _state: ActionState, form
   }
   try {
     await uploadCarImage(carId, parsed.data);
-  } catch {
-    logger.error("car.image_upload_failed", { carId });
-    return { message: "Gambar gagal diunggah. Tidak ada data parsial yang disimpan.", errors: {} };
+  } catch (error) {
+    const message = reportUploadFailure("car.image_upload_failed", error, { carId });
+    return actionResult("error", message, { image: [message] });
   }
-  revalidatePath(`/admin/cars/${carId}/edit`);
-  refreshPublicCarRoutes();
-  return { message: "Gambar berhasil diunggah.", errors: {} };
+  try {
+    revalidatePath(`/admin/cars/${carId}/edit`);
+    refreshPublicCarRoutes();
+  } catch {
+    logger.warn("car.image_revalidation_failed", { carId });
+    return actionResult("warning", "Gambar disimpan. Muat ulang halaman untuk melihat perubahan.");
+  }
+  return actionResult("success", "Gambar berhasil diunggah.");
 }
 
 export async function setPrimaryImageAction(formData: FormData) {
