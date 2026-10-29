@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import type { ActionState } from "@/types/action-state";
 import { emptyActionState } from "@/types/action-state";
 import { changeCarDraft, type CarDraft } from "./form-draft";
+import { ConfirmationForm } from "@/components/admin/confirmation-form";
+import { vehicleConfirmation } from "@/features/admin/confirmation-policy";
 
 type BrandOption = { id: string; name: string; models: { id: string; name: string }[] };
 type CarDefaults = {
@@ -50,7 +52,7 @@ export function CarForm({ action, brands, defaults, submitLabel }: {
   const selectClass = "min-h-11 w-full rounded-xl border border-white/15 bg-zinc-950 px-4 text-white focus:border-red-500 focus:outline-none";
 
   return (
-    <form action={formAction} className="grid gap-5 lg:grid-cols-2">
+    <ConfirmationForm confirmation={data => vehicleConfirmation(defaults, data)} action={formAction} className="grid gap-5 lg:grid-cols-2">
       <FormField error={field("condition")} htmlFor="condition" label="Kondisi">
         <select className={selectClass} {...control("condition")} id="condition" name="condition"><option value="NEW">Baru</option><option value="USED">Bekas</option></select>
       </FormField>
@@ -84,6 +86,6 @@ export function CarForm({ action, brands, defaults, submitLabel }: {
         <Button disabled={pending || brands.length === 0} type="submit">{pending ? "Menyimpan…" : submitLabel}</Button>
         {state.message ? <p aria-live="polite" className={state.status === "success" ? "text-sm text-emerald-300" : "text-sm text-red-300"}>{state.message}</p> : null}
       </div>
-    </form>
+    </ConfirmationForm>
   );
 }

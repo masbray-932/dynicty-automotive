@@ -1,6 +1,8 @@
 "use client";
 import { useActionState, useEffect, useId, useState } from "react";
 import type { DealerContent } from "@prisma/client";
+import { ConfirmationForm } from "@/components/admin/confirmation-form";
+import { profileConfirmation, contentConfirmation, criticalAction } from "@/features/admin/confirmation-policy";
 import { FormField } from "@/components/ui/form-field";
 import { emptyActionState } from "@/types/action-state";
 import { saveDealerContentAction, saveContentItemAction, deleteContentItemAction } from "@/server/content/actions";
@@ -13,7 +15,7 @@ function Field({label,name,value="",multiline=false,max=200,error,type="text",mi
 export function ProfileEditor({profile}:{profile:DealerContent|null}) {
   const [state,action,pending]=useActionState(saveDealerContentAction,emptyActionState);
   const showroomId=useId();
-  return <form action={action} className="grid gap-5 rounded-2xl border border-white/10 bg-zinc-900 p-5">
+  return <ConfirmationForm action={action} confirmation={data => profileConfirmation(profile, data)} className="grid gap-5 rounded-2xl border border-white/10 bg-zinc-900 p-5">
     <h2 className="text-xl font-bold">Welcome & company profile</h2>
     <Field label="Judul welcome" name="welcomeTitle" value={profile?.welcomeTitle} max={150} error={state.errors.welcomeTitle?.[0]} />
     <Field label="Isi welcome" name="welcomeBody" value={profile?.welcomeBody} multiline max={2000} error={state.errors.welcomeBody?.[0]} />
@@ -28,7 +30,7 @@ export function ProfileEditor({profile}:{profile:DealerContent|null}) {
     <label><input type="checkbox" name="operatingHoursActive" defaultChecked={profile?.operatingHoursActive} /> Tampilkan jam operasional</label>
     <button type="submit" className={button} disabled={pending}>{pending?"Menyimpan…":"Simpan profile"}</button>
     <Status {...state} />
-  </form>;
+  </ConfirmationForm>;
 }
 function Preview({item,url}:{item:PublicContentItem;url:string|null}) {
   const [width,setWidth]=useState(390);
@@ -43,7 +45,7 @@ export function ItemEditor({kind,item}:{kind:ContentKind;item?:PublicContentItem
   const draft:PublicContentItem=item??{id:"preview",kind,title:"Preview gambar",body:"",link:"",active:false,sortOrder:0,mediaUrl:null};
   const media=isMediaKind(kind);
   return <article className="grid gap-4 rounded-xl border border-white/10 bg-zinc-900 p-4">
-    <form action={action} className="grid gap-4">
+    <ConfirmationForm action={action} confirmation={data => contentConfirmation(item, data)} className="grid gap-4">
       <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item?.id??""} />
       <Field label={kind==="FAQ"?"Pertanyaan":media?"Deskripsi gambar / nama partner":"Judul"} name="title" value={item?.title} error={state.errors.title?.[0]} />
       {!media ? <Field label={kind==="FAQ"?"Jawaban":"Penjelasan faktual"} name="body" value={item?.body} multiline max={3000} error={state.errors.body?.[0]} />:<input type="hidden" name="body" value="" />}
@@ -51,7 +53,7 @@ export function ItemEditor({kind,item}:{kind:ContentKind;item?:PublicContentItem
       <Field label="Urutan (angka terkecil lebih dahulu)" name="sortOrder" value={String(item?.sortOrder??0)} error={state.errors.sortOrder?.[0]} type="number" min={0} maxValue={999} />
       <label><input type="checkbox" name="active" defaultChecked={item?.active} /> Aktif</label>
       <button type="submit" disabled={pending} className={button}>{pending?"Menyimpan…":item?"Simpan perubahan":"Tambah item"}</button><Status {...state} />
-    </form>
-    {item?<form action={deleteAction} className="grid gap-3 border-t border-white/10 pt-3"><input type="hidden" name="id" value={item.id} /><label><input type="checkbox" name="confirm" required /> Konfirmasi hapus item ini</label><button type="submit" className="min-h-11 rounded-lg border border-red-400 px-4 text-red-300 focus-visible:outline-2 focus-visible:outline-white" disabled={deleting}>Hapus</button><Status {...deleteState} /></form>:null}
+    </ConfirmationForm>
+    {item?<ConfirmationForm action={deleteAction} confirmation={() => criticalAction(`Hapus ${item.title}?`, item.active ? "Konten aktif ini akan hilang dari website publik dan medianya akan dibersihkan." : "Konten dan referensi medianya akan dihapus.", "Hapus konten", true)} className="grid gap-3 border-t border-white/10 pt-3"><input type="hidden" name="id" value={item.id} /><input type="hidden" name="confirm" value="on" /><button type="submit" className="min-h-11 rounded-lg border border-red-400 px-4 text-red-300 focus-visible:outline-2 focus-visible:outline-white" disabled={deleting}>Hapus</button><Status {...deleteState} /></ConfirmationForm>:null}
   </article>;
 }

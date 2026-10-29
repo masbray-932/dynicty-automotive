@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { deleteImageAction, reorderImageAction, setPrimaryImageAction, uploadImageAction } from "@/server/cars/actions";
+import { ConfirmationForm } from "@/components/admin/confirmation-form";
+import { criticalAction } from "@/features/admin/confirmation-policy";
 import { emptyActionState } from "@/types/action-state";
 
 type ImageItem = { id: string; url: string; isPrimary: boolean; sortOrder: number };
@@ -32,9 +34,9 @@ export function ImageManager({ carId, images }: { carId: string; images: ImageIt
                 {image.isPrimary ? <span className="absolute left-2 top-2 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">Cover</span> : null}
               </div>
               <div className="flex flex-wrap gap-2 p-3">
-                {!image.isPrimary ? <form action={setPrimaryImageAction}><input name="carId" type="hidden" value={carId} /><input name="imageId" type="hidden" value={image.id} /><Button className="min-h-9 px-3 py-1" type="submit" variant="secondary">Jadikan cover</Button></form> : null}
+                {!image.isPrimary ? <ConfirmationForm action={setPrimaryImageAction} confirmation={() => criticalAction("Ganti gambar utama kendaraan?", `Foto urutan ${index + 1} akan menjadi cover yang ditampilkan kepada pengunjung.`, "Jadikan cover")}><input name="carId" type="hidden" value={carId} /><input name="imageId" type="hidden" value={image.id} /><Button className="min-h-9 px-3 py-1" type="submit" variant="secondary">Jadikan cover</Button></ConfirmationForm> : null}
                 {(["up", "down"] as const).map((direction) => <form action={reorderImageAction} key={direction}><input name="carId" type="hidden" value={carId} /><input name="imageId" type="hidden" value={image.id} /><input name="direction" type="hidden" value={direction} /><Button className="min-h-9 px-3 py-1" disabled={direction === "up" ? index === 0 : index === images.length - 1} type="submit" variant="secondary">{direction === "up" ? "Naik" : "Turun"}</Button></form>)}
-                <form action={deleteImageAction} onSubmit={(event) => { if (!window.confirm("Hapus gambar ini?")) event.preventDefault(); }}><input name="carId" type="hidden" value={carId} /><input name="imageId" type="hidden" value={image.id} /><Button className="min-h-9 px-3 py-1" type="submit" variant="danger">Hapus</Button></form>
+                <ConfirmationForm action={deleteImageAction} confirmation={() => criticalAction(image.isPrimary ? "Hapus gambar utama?" : "Hapus gambar kendaraan?", image.isPrimary ? "Cover akan dihapus. Gambar lain akan dipilih sebagai cover pengganti bila tersedia." : "Gambar ini akan dihapus dan tidak dapat dipulihkan.", "Hapus gambar", true)}><input name="carId" type="hidden" value={carId} /><input name="imageId" type="hidden" value={image.id} /><Button className="min-h-9 px-3 py-1" type="submit" variant="danger">Hapus</Button></ConfirmationForm>
               </div>
             </li>
           ))}
