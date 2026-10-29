@@ -4,8 +4,10 @@ import { Card } from "@/components/ui/card";
 import { db } from "@/db/client";
 import { CarForm } from "@/features/cars/car-form";
 import { createCarAction } from "@/server/cars/actions";
+import { requireAdmin } from "@/server/auth/session";
 
 export default async function NewCarPage() {
+  await requireAdmin();
   await connection();
   const brands = await db.brand.findMany({ orderBy: { name: "asc" }, include: { models: { orderBy: { name: "asc" }, select: { id: true, name: true } } } });
   return (

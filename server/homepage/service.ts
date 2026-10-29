@@ -133,11 +133,12 @@ async function getLatestCars(excludedIds: string[]) {
 async function getBrands() {
   const brands = await db.brand.findMany({
     orderBy: { name: "asc" },
-    take: 12,
+    take: 100,
+    where: { cars: { some: { status: "AVAILABLE" } } },
     select: {
       name: true,
       slug: true,
-      models: { orderBy: { name: "asc" }, select: { name: true, slug: true } },
+      models: { where: { cars: { some: { status: "AVAILABLE" } } }, take: 100, orderBy: { name: "asc" }, select: { name: true, slug: true } },
       _count: { select: { cars: { where: { status: "AVAILABLE" } } } },
     },
   });

@@ -7,10 +7,12 @@ import { getStorageProvider } from "@/services/storage";
 import { createCarImageKey } from "@/services/storage/key";
 import type { CarFormValues } from "@/validation/car";
 import { parseMileage, parsePrice } from "@/validation/car";
+import { requireAdmin } from "@/server/auth/session";
 
 export class InvalidModelRelationError extends Error {}
 
 export async function assertModelBelongsToBrand(brandId: string, modelId: string) {
+  await requireAdmin();
   const model = await db.carModel.findUnique({ where: { id: modelId }, select: { brandId: true } });
   if (!modelBelongsToBrand(model, brandId)) throw new InvalidModelRelationError("Model tidak sesuai dengan merek yang dipilih.");
 }
@@ -44,14 +46,17 @@ async function carData(values: CarFormValues, excludeId?: string) {
 }
 
 export async function createCar(values: CarFormValues) {
+  await requireAdmin();
   return db.car.create({ data: await carData(values), select: { id: true, slug: true } });
 }
 
 export async function updateCar(id: string, values: CarFormValues) {
+  await requireAdmin();
   return db.car.update({ where: { id }, data: await carData(values, id), select: { id: true, slug: true } });
 }
 
 export async function deleteCarWithMedia(id: string) {
+  await requireAdmin();
   const car = await db.car.findUnique({ where: { id }, include: { images: { select: { storageKey: true } } } });
   if (!car) return { deleted: false, failedKeys: [] as string[] };
   await db.car.delete({ where: { id } });
@@ -63,11 +68,12 @@ export async function deleteCarWithMedia(id: string) {
 }
 
 export async function uploadCarImage(carId: string, file: File) {
+  await requireAdmin();
   const storage = getStorageProvider();
-  const key = createCarImageKey(carId, file.name);
-  await storage.put({ key, body: new Uint8Array(await file.arrayBuffer()), contentType: file.type });
+  const key = createCarImageKey(carId, file.name, crypto.randomUUID(), file.type);
 
   try {
+    await storage.put({ key, body: new Uint8Array(await file.arrayBuffer()), contentType: file.type });
     return await db.$transaction(async (transaction) => {
       const [car, aggregate] = await Promise.all([
         transaction.car.findUnique({ where: { id: carId }, select: { id: true } }),
@@ -90,6 +96,7 @@ export async function uploadCarImage(carId: string, file: File) {
 }
 
 export async function setPrimaryImage(carId: string, imageId: string) {
+  await requireAdmin();
   await db.$transaction(async (transaction) => {
     const image = await transaction.carImage.findFirst({ where: { id: imageId, carId }, select: { id: true } });
     if (!image) throw new Error("Gambar tidak ditemukan.");
@@ -99,6 +106,7 @@ export async function setPrimaryImage(carId: string, imageId: string) {
 }
 
 export async function reorderCarImage(carId: string, imageId: string, direction: "up" | "down") {
+  await requireAdmin();
   await db.$transaction(async (transaction) => {
     const images = await transaction.carImage.findMany({ where: { carId }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } });
     const ordered = reorderImageIds(images.map((image) => image.id), imageId, direction);
@@ -109,6 +117,7 @@ export async function reorderCarImage(carId: string, imageId: string, direction:
 }
 
 export async function deleteCarImage(carId: string, imageId: string) {
+  await requireAdmin();
   const result = await db.$transaction(async (transaction) => {
     const image = await transaction.carImage.findFirst({ where: { id: imageId, carId } });
     if (!image) throw new Error("Gambar tidak ditemukan.");

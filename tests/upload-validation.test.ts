@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { validateImageUpload } from "@/validation/upload";
+import { imageFile } from "./fixtures/images";
 
 describe("image upload validation", () => {
   it("accepts a JPEG signature with matching MIME type", async () => {
-    const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], "car.jpg", { type: "image/jpeg" });
+    const file = imageFile("jpeg", "car.jpg");
     expect((await validateImageUpload(file)).success).toBe(true);
   });
 

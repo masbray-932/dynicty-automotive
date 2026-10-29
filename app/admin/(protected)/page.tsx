@@ -3,10 +3,12 @@ import { connection } from "next/server";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { getDashboardData } from "@/server/dashboard/service";
+import { requireAdmin } from "@/server/auth/session";
 
 const statusLabels = { DRAFT: "Draft", AVAILABLE: "Tersedia", SOLD: "Terjual" } as const;
 
 export default async function AdminDashboardPage() {
+  await requireAdmin();
   await connection();
   const result = await getDashboardData();
   if (result.kind === "error") return <section><h1 className="text-3xl font-bold text-white">Dashboard</h1><div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-6" role="alert"><h2 className="font-bold text-white">Data dashboard tidak dapat dimuat</h2><p className="mt-2 text-sm text-zinc-300">Silakan coba kembali beberapa saat lagi. Nilai nol tidak ditampilkan karena koneksi database belum terverifikasi.</p></div></section>;

@@ -4,6 +4,7 @@ import { isStagingDeployment } from "./lib/deployment-environment";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: { serverActions: { bodySizeLimit: "10mb" } },
   async headers() {
     const baseline = securityHeaders(process.env.NODE_ENV === "production");
     const stagingHeaders = isStagingDeployment()
