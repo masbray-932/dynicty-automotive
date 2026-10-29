@@ -17,6 +17,7 @@ import { CarForm } from "@/features/cars/car-form";
 import { DealerSettingsForm } from "@/features/settings/dealer-settings-form";
 import { ActionNotification } from "@/components/ui/action-notification";
 import { confirmBrandRename } from "@/features/master-data/rename-confirmation";
+import { ConfirmationForm } from "@/components/admin/confirmation-form";
 
 type Props = { children?: ReactNode; name?: string; value?: string; checked?: boolean; required?: boolean; onChange?: (event: { target: { value: string; checked?: boolean; setCustomValidity?: (message: string) => void } }) => void; onClick?: () => void; action?: (data: FormData) => Promise<unknown>; state?: unknown; role?: string; error?: string; htmlFor?: string };
 function elements(node: ReactNode): ReactElement<Props>[] {
@@ -50,7 +51,7 @@ describe("form wiring regression (hook harness, not browser certification)", () 
     expect(elements(tree).find(x => x.props.name === "address")?.props.required).toBe(true);
     const outcome = actionResult("error", "Alamat wajib diisi", { address: ["Alamat wajib diisi"] });
     harness.save.mockResolvedValue(outcome);
-    const forms = elements(tree).filter(x => x.type === "form");
+    const forms = elements(tree).filter(x => x.type === "form" || x.type === ConfirmationForm);
     await forms[1].props.action!(new FormData());
     harness.result = outcome;
     tree = render(page);
