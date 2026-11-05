@@ -3,13 +3,12 @@ import { db } from "@/db/client";
 import { getStorageProvider } from "@/services/storage";
 import { dealerSettingsSchema, isDealerSettingsField } from "@/validation/dealer-settings";
 import { requireAdmin } from "@/server/auth/session";
-
-export const DEALER_SETTINGS_ID = "default";
+import { LEGACY_DEALER_SCOPE } from "@/server/dealer/scope";
 
 export async function getAdminDealerSettings() {
   await requireAdmin();
   try {
-    const settings = await db.dealerSettings.findUnique({ where: { id: DEALER_SETTINGS_ID } });
+    const settings = await db.dealerSettings.findUnique({ where: { id: LEGACY_DEALER_SCOPE.dealerId } });
     if (!settings) return { kind: "success" as const, settings: null, logoUrl: null };
     let logoUrl: string | null = null;
     if (settings.logoStorageKey) { try { logoUrl = getStorageProvider().publicUrl(settings.logoStorageKey); } catch { logoUrl = null; } }
@@ -31,5 +30,5 @@ export async function upsertDealerSettings(input: unknown) {
     dealerSettingsSchema.parse(input);
   // Keep create and update limited to operational data, even if the schema changes later.
   const data = { dealerName, phone, whatsappNumber, email, address, googleMapsUrl, instagramUrl, facebookUrl };
-  return db.dealerSettings.upsert({ where: { id: DEALER_SETTINGS_ID }, create: { id: DEALER_SETTINGS_ID, ...data }, update: data });
+  return db.dealerSettings.upsert({ where: { id: LEGACY_DEALER_SCOPE.dealerId }, create: { id: LEGACY_DEALER_SCOPE.dealerId, ...data }, update: data });
 }
