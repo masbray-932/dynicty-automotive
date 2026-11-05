@@ -12,22 +12,20 @@ vi.mock("@/db/client", () => ({ db: {
 } }));
 vi.mock("@/services/storage", () => ({ getStorageProvider: mocks.storage }));
 import { getDashboardData } from "@/server/dashboard/service";
-import { getAdminDealerSettings, upsertDealerSettings, replaceDealerLogo, removeDealerLogo } from "@/server/settings/service";
+import { getAdminDealerSettings, upsertDealerSettings } from "@/server/settings/service";
 import { getAdminDealerContent, getPublicDealerContent } from "@/server/content/service";
 import * as cars from "@/server/cars/service";
 import { carFormSchema } from "@/validation/car";
 import { dealerSettingsSchema } from "@/validation/dealer-settings";
 
 const car = carFormSchema.parse({ condition: "NEW", brandId: "cm123456789012345678901234", modelId: "cm123456789012345678901235", variant: "Test", year: 2026, price: "100000000", transmission: "Automatic", fuelType: "Bensin", color: "Putih", mileage: "", description: "Test vehicle", status: "DRAFT", featured: false });
-const settings = dealerSettingsSchema.parse({ dealerName: "Test Dealer", phone: "", whatsappNumber: "", email: "", address: "Alamat staging", googleMapsUrl: "", instagramUrl: "", facebookUrl: "", primaryColor: "", secondaryColor: "" });
+const settings = dealerSettingsSchema.parse({ dealerName: "Test Dealer", phone: "", whatsappNumber: "", email: "", address: "Alamat staging", googleMapsUrl: "", instagramUrl: "", facebookUrl: "" });
 const file = new File(["test"], "test.png", { type: "image/png" });
 const boundaries = [
   { name: "dashboard", run: () => getDashboardData() },
   { name: "settings read", run: () => getAdminDealerSettings() },
   { name: "CMS read", run: () => getAdminDealerContent() },
   { name: "settings write", run: () => upsertDealerSettings(settings) },
-  { name: "logo upload", run: () => replaceDealerLogo(file) },
-  { name: "logo remove", run: () => removeDealerLogo() },
   { name: "model relation", run: () => cars.assertModelBelongsToBrand("brand", "model") },
   { name: "car create", run: () => cars.createCar(car) },
   { name: "car update", run: () => cars.updateCar("car", car) },

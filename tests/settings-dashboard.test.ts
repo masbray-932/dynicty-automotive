@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { dealerSettingsSchema, MAX_LOGO_SIZE, validateLogoUpload } from "@/validation/dealer-settings";
+import { dealerSettingsSchema } from "@/validation/dealer-settings";
 import { mapDashboardCounts, projectRecentVehicles } from "@/features/dashboard/domain";
 import { mergeDealerPresentation } from "@/features/homepage/domain";
-import { imageFile } from "./fixtures/images";
 
-const valid = { dealerName: "  Dealer Maju  ", phone: "+62 21 555-0101", whatsappNumber: "081234567890", email: " SALES@EXAMPLE.COM ", address: "Jalan Utama\nJakarta", googleMapsUrl: "https://maps.google.com/test", instagramUrl: "https://instagram.com/dealer", facebookUrl: "https://facebook.com/dealer", primaryColor: "#dc2626", secondaryColor: "#18181b" };
+const valid = { dealerName: "  Dealer Maju  ", phone: "+62 21 555-0101", whatsappNumber: "081234567890", email: " SALES@EXAMPLE.COM ", address: "Jalan Utama\nJakarta", googleMapsUrl: "https://maps.google.com/test", instagramUrl: "https://instagram.com/dealer", facebookUrl: "https://facebook.com/dealer" };
 
 describe("DealerSettings validation", () => {
   it("requires and trims the dealer name", () => {
@@ -22,19 +21,8 @@ describe("DealerSettings validation", () => {
     expect(dealerSettingsSchema.safeParse({ ...valid, instagramUrl: "not-url" }).success).toBe(false);
     expect(dealerSettingsSchema.safeParse({ ...valid, facebookUrl: "ftp://example.com" }).success).toBe(false);
   });
-  it("accepts only six-digit hex colors", () => {
-    expect(dealerSettingsSchema.parse(valid).primaryColor).toBe("#DC2626");
-    expect(dealerSettingsSchema.safeParse({ ...valid, primaryColor: "red; background:url(x)" }).success).toBe(false);
-  });
   it("keeps centralized public fallback behavior", () => {
     expect(mergeDealerPresentation(null).dealerName).toBe("Dynicty Automotive");
-  });
-  it("validates logo size, MIME type, and binary signature", async () => {
-    const png = imageFile("png", "logo.png");
-    expect((await validateLogoUpload(png)).success).toBe(true);
-    const executable = new File(["MZ executable"], "logo.png", { type: "image/png" });
-    expect((await validateLogoUpload(executable)).success).toBe(false);
-    expect(MAX_LOGO_SIZE).toBe(4 * 1024 * 1024);
   });
 });
 

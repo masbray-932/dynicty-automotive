@@ -38,8 +38,8 @@ describe("master data and settings classification", () => {
   it.each(["dealerName", "whatsappNumber", "phone", "email", "address", "googleMapsUrl", "instagramUrl", "facebookUrl"])("confirms dealer %s", name => {
     expect(settingsConfirmation({}, form({ [name]: "changed" }))?.changes?.some(change => change.after === "changed")).toBe(true);
   });
-  it("does not confirm cosmetic colors or unchanged fallback identity", () => {
-    expect(settingsConfirmation({}, form({ dealerName: "Dynicty Automotive", primaryColor: "#123456", secondaryColor: "#abcdef" }))).toBeNull();
+  it("does not confirm an unchanged fallback identity", () => {
+    expect(settingsConfirmation({}, form({ dealerName: "Dynicty Automotive" }))).toBeNull();
   });
 });
 
