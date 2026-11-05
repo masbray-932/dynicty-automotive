@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { HOMEPAGE_CAR_LIMIT, dealerFallback, mergeDealerPresentation, selectFeaturedHomepageCars } from "@/features/homepage/domain";
 import { getStorageProvider } from "@/services/storage";
 import { logger } from "@/server/log";
+import { getLegacyPublicDealerScope } from "@/server/dealer/scope";
 
 export type HomepageCar = {
   id: string;
@@ -86,7 +87,8 @@ function toHomepageCar(car: {
 
 export const getDealerPresentation = cache(async () => {
   try {
-    const settings = await db.dealerSettings.findUnique({ where: { id: "default" } });
+    const { dealerId } = getLegacyPublicDealerScope();
+    const settings = await db.dealerSettings.findUnique({ where: { id: dealerId } });
     if (!settings) return dealerFallback;
     let logoUrl: string | null = null;
     if (settings.logoStorageKey) {

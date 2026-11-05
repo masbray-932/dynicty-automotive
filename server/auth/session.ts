@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { isSessionExpired } from "@/features/auth/session";
 import { getServerEnv } from "@/server/env";
+import { LEGACY_DEALER_SCOPE } from "@/server/dealer/scope";
+import { allowsPermission, type AuthorizationRequest, type DealerAdministrator } from "./authorization";
 
 const COOKIE_NAME = "dynicty_admin_session";
 const SESSION_LENGTH_MS = 1000 * 60 * 60 * 24 * 7;
@@ -54,13 +56,27 @@ export async function getCurrentAdmin() {
     await db.adminSession.deleteMany({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
-  return session.admin;
+  return { id: session.admin.id, email: session.admin.email };
 }
 
-export async function requireAdmin() {
+// Legacy AdminSession has no role or membership columns. Never derive either
+// from request data or from extra properties on a session/user object.
+export async function requireLegacyAdminPermission(request: AuthorizationRequest) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/admin/login");
+  const identity: DealerAdministrator = {
+    role: "dealer-admin",
+    subjectId: admin.id,
+    scope: LEGACY_DEALER_SCOPE,
+  };
+  if (!allowsPermission(identity, request)) throw new Error("Dealer admin permission denied.");
   return admin;
+}
+
+// Existing Admin entry points explicitly use the single-dealer compatibility
+// path. Future membership-based accounts require their own verified resolver.
+export async function requireAdmin() {
+  return requireLegacyAdminPermission({ permission: "dealer:operate", scope: LEGACY_DEALER_SCOPE });
 }
 
 export async function destroyAdminSession() {
