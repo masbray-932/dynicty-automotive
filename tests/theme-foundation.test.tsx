@@ -16,7 +16,6 @@ import {
   systemThemeCssVariables,
 } from "@/features/theme/domain";
 import { ThemeScope } from "@/features/theme/theme-scope";
-import { dealerSettingsSchema } from "@/validation/dealer-settings";
 
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "geist-sans" }),
@@ -113,12 +112,7 @@ describe("Automotive v2 contract", () => {
     expect(contrastRatio(background, aliases["--auto-focus"])).toBeGreaterThanOrEqual(3);
   });
 
-  it("keeps the existing Dealer Settings color validator compatible", () => {
-    const parsed = dealerSettingsSchema.parse({
-      dealerName: "Dealer Lama", phone: "", whatsappNumber: "", email: "", address: "Alamat dealer lama",
-      googleMapsUrl: "", instagramUrl: "", facebookUrl: "", primaryColor: " #dc2626 ", secondaryColor: "#18181b",
-    });
-    expect(parsed).toMatchObject({ primaryColor: "#DC2626", secondaryColor: "#18181B" });
+  it("keeps tolerant legacy color normalization on the storefront read path", () => {
     expect(normalizeThemeColor("  #aBc123 ")).toBe("#ABC123");
     expect(normalizeThemeColor("red")).toBeNull();
     expect(isThemeColor("#00000G")).toBe(false);

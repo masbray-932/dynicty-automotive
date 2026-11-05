@@ -12,7 +12,7 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
   },
   useActionState: (action: (previous: unknown, data: FormData) => unknown) => [harness.result, (data: FormData) => action(harness.result, data), false],
 }));
-vi.mock("@/server/settings/actions", () => ({ saveDealerSettingsAction: harness.save, uploadDealerLogoAction: harness.save, removeDealerLogoAction: harness.save }));
+vi.mock("@/server/settings/actions", () => ({ saveDealerSettingsAction: harness.save }));
 import { CarForm } from "@/features/cars/car-form";
 import { DealerSettingsForm } from "@/features/settings/dealer-settings-form";
 import { ActionNotification } from "@/components/ui/action-notification";
@@ -43,7 +43,7 @@ describe("form wiring regression (hook harness, not browser certification)", () 
     expect(elements(render(page)).find(x => x.props.name === "modelId")?.props.value).toBe("");
   });
   it("preserves settings draft, rejects client whitespace and renders exactly one notification", async () => {
-    const page = () => DealerSettingsForm({ values: { dealerName: "Dealer", address: "Old address" }, logoUrl: null });
+    const page = () => DealerSettingsForm({ values: { dealerName: "Dealer", address: "Old address", phone: null, whatsappNumber: null, email: null, googleMapsUrl: null, instagramUrl: null, facebookUrl: null }, logoUrl: null });
     let tree = render(page);
     const validity = vi.fn();
     elements(tree).find(x => x.props.name === "address")!.props.onChange!({ target: { value: "   ", setCustomValidity: validity } });
@@ -52,7 +52,8 @@ describe("form wiring regression (hook harness, not browser certification)", () 
     const outcome = actionResult("error", "Alamat wajib diisi", { address: ["Alamat wajib diisi"] });
     harness.save.mockResolvedValue(outcome);
     const forms = elements(tree).filter(x => x.type === "form" || x.type === ConfirmationForm);
-    await forms[1].props.action!(new FormData());
+    expect(forms).toHaveLength(1);
+    await forms[0].props.action!(new FormData());
     harness.result = outcome;
     tree = render(page);
     expect(elements(tree).find(x => x.props.name === "address")?.props.value).toBe("   ");
