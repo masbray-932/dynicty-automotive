@@ -1,39 +1,33 @@
 import type { CSSProperties } from "react";
 
-const HEX_COLOR = /^#[0-9A-F]{6}$/;
+const HEX_COLOR = /^#[0-9A-F]{6}$/i;
 
-export const DEFAULT_THEME = Object.freeze({
-  primary: "#DC2626",
-  secondary: "#18181B",
-  background: "#09090B",
-  foreground: "#F4F4F5",
-  surface: "#18181B",
-  mutedForeground: "#A1A1AA",
-  border: "#3F3F46",
-  success: "#16A34A",
-  warning: "#D97706",
-  danger: "#B91C1C",
+export const AUTOMOTIVE_THEME_VERSION = 2;
+
+// The storefront contract uses Automotive's existing dark palette.
+// Unused canonical roles are defined here but do not restyle existing components.
+export const AUTOMOTIVE_TOKEN_DEFAULTS = Object.freeze({
+  "--color-primary": "#DC2626",
+  "--color-primary-dark": "#B91C1C",
+  "--color-accent": "#DC2626",
+  "--color-background": "#09090B",
+  "--color-surface": "#18181B",
+  "--color-surface-secondary": "#09090B",
+  "--color-text-primary": "#F4F4F5",
+  "--color-text-secondary": "#A1A1AA",
+  "--color-border": "#3F3F46",
+  "--color-sale": "#DC2626", // Reserved; not an inventory status or regular price.
 });
 
-export type DealerThemeInput = {
-  primaryColor?: string | null;
-  secondaryColor?: string | null;
-};
-
-export type DealerTheme = {
-  primary: string;
-  onPrimary: "#000000" | "#FFFFFF";
-  secondary: string;
-  onSecondary: "#000000" | "#FFFFFF";
-  focus: string;
-};
-
-export type ThemeCssVariables = CSSProperties & Record<`--${string}`, string>;
+export type AutomotiveToken = keyof typeof AUTOMOTIVE_TOKEN_DEFAULTS;
+export type ThemeOverrides = Partial<Record<AutomotiveToken, string | null>>;
+type CanonicalTokens = Record<AutomotiveToken, string>;
 
 export function isThemeColor(value: string) {
-  return HEX_COLOR.test(value.trim().toUpperCase());
+  return normalizeThemeColor(value) !== null;
 }
 
+// Keep the existing tolerant parser at the legacy DealerSettings boundary.
 export function normalizeThemeColor(value: string | null | undefined) {
   const normalized = value?.trim().toUpperCase();
   return normalized && HEX_COLOR.test(normalized) ? normalized : null;
@@ -59,36 +53,55 @@ export function readableForeground(background: string): "#000000" | "#FFFFFF" {
   return contrastRatio(background, "#000000") >= contrastRatio(background, "#FFFFFF") ? "#000000" : "#FFFFFF";
 }
 
-export function resolveDealerTheme(input: DealerThemeInput = {}): DealerTheme {
-  const primary = normalizeThemeColor(input.primaryColor) ?? DEFAULT_THEME.primary;
-  const secondary = normalizeThemeColor(input.secondaryColor) ?? DEFAULT_THEME.secondary;
-  return {
-    primary,
-    onPrimary: readableForeground(primary),
-    secondary,
-    onSecondary: readableForeground(secondary),
-    focus: contrastRatio(primary, DEFAULT_THEME.background) >= 3 ? primary : DEFAULT_THEME.foreground,
+export function resolveAutomotiveTheme(overrides: unknown = null) {
+  const tokens: CanonicalTokens = { ...AUTOMOTIVE_TOKEN_DEFAULTS };
+
+  if (overrides !== null) {
+    if (typeof overrides !== "object") throw new TypeError("Expected a theme override object.");
+    const prototype = Object.getPrototypeOf(overrides);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new TypeError("Expected a plain theme override object.");
+    }
+
+    for (const key of Reflect.ownKeys(overrides)) {
+      if (typeof key !== "string" || !Object.hasOwn(AUTOMOTIVE_TOKEN_DEFAULTS, key)) {
+        throw new TypeError("Unknown Automotive theme token.");
+      }
+      const descriptor = Object.getOwnPropertyDescriptor(overrides, key);
+      if (!descriptor || !("value" in descriptor)) throw new TypeError("Expected a theme token value.");
+      const value: unknown = descriptor.value;
+      if (value === null) continue;
+      if (typeof value !== "string" || value.length !== 7 || !HEX_COLOR.test(value)) {
+        throw new TypeError("Expected a six-digit hex theme color.");
+      }
+      tokens[key as AutomotiveToken] = value.toUpperCase();
+    }
+  }
+
+  const background = tokens["--color-background"];
+  const primary = tokens["--color-primary"];
+  const text = tokens["--color-text-primary"];
+  const foreground = contrastRatio(text, background) >= 4.5 ? text : readableForeground(background);
+  const aliases = {
+    "--auto-background": background,
+    "--auto-foreground": foreground,
+    "--auto-action-primary": primary,
+    "--auto-action-foreground": readableForeground(primary),
+    "--auto-focus": contrastRatio(primary, background) >= 3 ? primary : foreground,
   };
+
+  return { tokens, aliases };
 }
 
-export function themeCssVariables(input: DealerThemeInput = {}): ThemeCssVariables {
-  const theme = resolveDealerTheme(input);
-  return {
-    "--theme-primary": theme.primary,
-    "--theme-on-primary": theme.onPrimary,
-    "--theme-secondary": theme.secondary,
-    "--theme-on-secondary": theme.onSecondary,
-    "--theme-focus": theme.focus,
-    "--theme-background": DEFAULT_THEME.background,
-    "--theme-foreground": DEFAULT_THEME.foreground,
-    "--theme-surface": DEFAULT_THEME.surface,
-    "--theme-muted-foreground": DEFAULT_THEME.mutedForeground,
-    "--theme-border": DEFAULT_THEME.border,
-    "--state-success": DEFAULT_THEME.success,
-    "--state-warning": DEFAULT_THEME.warning,
-    "--state-danger": DEFAULT_THEME.danger,
-    // Compatibility aliases for Stage 1–2 components while the minimal token migration is completed.
-    "--accent": theme.primary,
-    "--brand-secondary": theme.secondary,
-  };
+type ThemeCssVariables = CSSProperties & Record<`--${string}`, string>;
+
+// Only the storefront emits the canonical contract. The root emits fixed
+// semantic defaults for shared controls, Admin and pages outside the shell.
+export function storefrontThemeCssVariables(overrides?: ThemeOverrides | null): ThemeCssVariables {
+  const { tokens, aliases } = resolveAutomotiveTheme(overrides);
+  return { ...tokens, ...aliases };
+}
+
+export function systemThemeCssVariables(): ThemeCssVariables {
+  return resolveAutomotiveTheme().aliases;
 }

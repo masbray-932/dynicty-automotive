@@ -1,30 +1,30 @@
 @import "tailwindcss";
 
+/* Bridge existing utility names without claiming the storefront's canonical keys. */
 @theme inline {
-  --color-background: var(--theme-background);
-  --color-foreground: var(--theme-foreground);
-  --color-brand-primary: var(--theme-primary);
-  --color-brand-on-primary: var(--theme-on-primary);
-  --color-brand-secondary: var(--theme-secondary);
-  --color-brand-on-secondary: var(--theme-on-secondary);
-  --color-brand-focus: var(--theme-focus);
-  --color-surface: var(--theme-surface);
-  --color-muted-foreground: var(--theme-muted-foreground);
-  --color-subtle-border: var(--theme-border);
+  --color-brand-primary: var(--auto-action-primary);
+  --color-brand-on-primary: var(--auto-action-foreground);
+  --color-brand-focus: var(--auto-focus);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+body,
+.automotive-storefront {
+  background: var(--auto-background);
+  color: var(--auto-foreground);
+}
+
 body {
-  background: var(--theme-background);
-  color: var(--theme-foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   margin: 0;
 }
 
-::selection {
-  background: var(--theme-primary);
-  color: var(--theme-on-primary);
+::selection,
+.automotive-storefront::selection,
+.automotive-storefront ::selection {
+  background: var(--auto-action-primary);
+  color: var(--auto-action-foreground);
 }
 
 html {
