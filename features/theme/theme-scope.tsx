@@ -1,6 +1,21 @@
 import type { ReactNode } from "react";
-import { themeCssVariables, type DealerThemeInput } from "./domain";
+import { AUTOMOTIVE_THEME_VERSION, storefrontThemeCssVariables, type ThemeOverrides } from "./domain";
 
-export function ThemeScope({ children, className = "", ...colors }: DealerThemeInput & { children: ReactNode; className?: string }) {
-  return <div className={className} data-theme-scope="dealer" style={themeCssVariables(colors)}>{children}</div>;
+type ThemeScopeProps = {
+  children: ReactNode;
+  className?: string;
+  overrides?: ThemeOverrides | null;
+};
+
+export function ThemeScope({ children, className, overrides }: ThemeScopeProps) {
+  return (
+    <div
+      className={className ? `automotive-storefront ${className}` : "automotive-storefront"}
+      data-theme-scope="dealer"
+      data-theme-version={AUTOMOTIVE_THEME_VERSION}
+      style={storefrontThemeCssVariables(overrides)}
+    >
+      {children}
+    </div>
+  );
 }
