@@ -107,9 +107,58 @@ model CarImage {
   @@index([carId, isPrimary])
 }
 
+enum DealerLifecycle {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum DealerDomainVerificationState {
+  PENDING
+  VERIFIED
+  REVOKED
+}
+
+enum DealerDomainRoutingState {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  RETIRED
+}
+
+model Dealer {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  displayName String
+  lifecycle   DealerLifecycle @default(PENDING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  domains     DealerDomain[]
+  settings    DealerSettings?
+}
+
+model DealerDomain {
+  id                String                        @id @default(cuid())
+  dealerId          String
+  hostname          String                        @unique @db.VarChar(253)
+  verificationState DealerDomainVerificationState @default(PENDING)
+  routingState      DealerDomainRoutingState      @default(PENDING)
+  isCanonical       Boolean                       @default(false)
+  bindingVersion    Int                           @default(1)
+  verifiedAt        DateTime?
+  activatedAt       DateTime?
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  dealer            Dealer                        @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([dealerId, id])
+  @@index([dealerId, routingState])
+}
+
 model DealerSettings {
-  id             String   @id @default("default")
-  dealerName     String   @default("Dynicty Automotive")
+  id             String              @id @default("default")
+  dealerName     String              @default("Dynicty Automotive")
   logoStorageKey String?
   whatsappNumber String?
   phone          String?
@@ -120,8 +169,10 @@ model DealerSettings {
   facebookUrl    String?
   primaryColor   String?
   secondaryColor String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  dealerId       String?             @unique
+  dealer         Dealer?             @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   content        DealerContent?
   contentItems   DealerContentItem[]
 }
@@ -135,34 +186,34 @@ enum DealerContentKind {
 }
 
 model DealerContent {
-  dealerId         String @id
-  welcomeTitle     String @default("")
-  welcomeBody      String @default("") @db.Text
-  welcomeActive    Boolean @default(false)
-  aboutSummary     String @default("") @db.Text
-  aboutStory       String @default("") @db.Text
-  aboutActive      Boolean @default(false)
-  showroomKey      String?
-  showroomAlt      String @default("")
-  operatingHours   String @default("") @db.Text
-  operatingHoursActive Boolean @default(false)
-  updatedAt        DateTime @updatedAt
-  dealer           DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  dealerId             String         @id
+  welcomeTitle         String         @default("")
+  welcomeBody          String         @default("") @db.Text
+  welcomeActive        Boolean        @default(false)
+  aboutSummary         String         @default("") @db.Text
+  aboutStory           String         @default("") @db.Text
+  aboutActive          Boolean        @default(false)
+  showroomKey          String?
+  showroomAlt          String         @default("")
+  operatingHours       String         @default("") @db.Text
+  operatingHoursActive Boolean        @default(false)
+  updatedAt            DateTime       @updatedAt
+  dealer               DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
 }
 
 model DealerContentItem {
-  id         String @id @default(cuid())
-  dealerId   String
-  kind       DealerContentKind
-  title      String
-  body       String @default("") @db.Text
-  link       String @default("")
-  mediaKey   String?
-  active     Boolean @default(false)
-  sortOrder  Int @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  dealer     DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  id        String            @id @default(cuid())
+  dealerId  String
+  kind      DealerContentKind
+  title     String
+  body      String            @default("") @db.Text
+  link      String            @default("")
+  mediaKey  String?
+  active    Boolean           @default(false)
+  sortOrder Int               @default(0)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  dealer    DealerSettings    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
 
   @@index([dealerId, kind, active, sortOrder])
 }
