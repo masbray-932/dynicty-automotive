@@ -13,28 +13,37 @@ import { standaloneOwner, standaloneCar } from "@/server/standalone/inventory";
 
 const statusLabels = { DRAFT: "Draft", AVAILABLE: "Tersedia", SOLD: "Terjual" } as const;
 
-export default async function AdminCarsPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; notice?: string }> }) {
+type SearchParam = string | string[] | undefined;
+
+function firstParam(value: SearchParam) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function AdminCarsPage({ searchParams }: { searchParams: Promise<{ q?: SearchParam; status?: SearchParam; notice?: SearchParam }> }) {
   await requireAdmin();
   await connection();
   const query = await searchParams;
-  const status = Object.values(CarStatus).includes(query.status as CarStatus) ? query.status as CarStatus : undefined;
-  const searchFilter: Prisma.CarWhereInput[] = query.q ? [
-    { variant: { contains: query.q, mode: "insensitive" } },
-    { slug: { contains: query.q, mode: "insensitive" } },
-    { brand: { name: { contains: query.q, mode: "insensitive" } } },
-    { model: { name: { contains: query.q, mode: "insensitive" } } },
+  const search = firstParam(query.q)?.trim().slice(0, 100) ?? "";
+  const requestedStatus = firstParam(query.status);
+  const status = Object.values(CarStatus).includes(requestedStatus as CarStatus) ? requestedStatus as CarStatus : undefined;
+  const searchFilter: Prisma.CarWhereInput[] = search ? [
+    { variant: { contains: search, mode: "insensitive" } },
+    { slug: { contains: search, mode: "insensitive" } },
+    { brand: { name: { contains: search, mode: "insensitive" } } },
+    { model: { name: { contains: search, mode: "insensitive" } } },
   ] : [];
   const cars = await db.car.findMany({
     where: { ...standaloneCar, ...(status ? { status } : {}), ...(searchFilter.length ? { OR: searchFilter } : {}) },
     orderBy: { updatedAt: "desc" },
     include: { brand: true, model: true, images: { where: { ...standaloneOwner, isPrimary: true }, take: 1 } },
   });
-  const notice = query.notice === "deleted" ? "Mobil berhasil dihapus." : query.notice === "deleted-cleanup-warning" ? "Mobil dihapus, tetapi sebagian media perlu dibersihkan manual." : "";
+  const requestedNotice = firstParam(query.notice);
+  const notice = requestedNotice === "deleted" ? "Mobil berhasil dihapus." : requestedNotice === "deleted-cleanup-warning" ? "Mobil dihapus, tetapi sebagian media perlu dibersihkan manual." : "";
   return (
     <section>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Kelola Mobil</h1><p className="mt-2 text-zinc-400">{cars.length} kendaraan ditemukan</p></div><Link className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white" href="/admin/cars/new">Tambah mobil</Link></div>
       {notice ? <p className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">{notice}</p> : null}
-      <form className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-zinc-900 p-4 sm:grid-cols-[1fr_180px_auto]" method="get"><input className="min-h-11 rounded-lg border border-white/15 bg-black/30 px-4" defaultValue={query.q} name="q" placeholder="Cari mobil" /><select className="min-h-11 rounded-lg border border-white/15 bg-zinc-950 px-4" defaultValue={status ?? ""} name="status"><option value="">Semua status</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="rounded-lg bg-white px-4 font-semibold text-black" type="submit">Filter</button></form>
+      <form className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-zinc-900 p-4 sm:grid-cols-[1fr_180px_auto]" method="get"><input className="min-h-11 rounded-lg border border-white/15 bg-black/30 px-4" defaultValue={search} maxLength={100} name="q" placeholder="Cari mobil" /><select className="min-h-11 rounded-lg border border-white/15 bg-zinc-950 px-4" defaultValue={status ?? ""} name="status"><option value="">Semua status</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="rounded-lg bg-white px-4 font-semibold text-black" type="submit">Filter</button></form>
       {cars.length === 0 ? <EmptyState title="Inventori kosong" description="Tambahkan mobil pertama atau ubah filter pencarian." /> : (
         <div className="overflow-x-auto rounded-xl border border-white/10"><table className="w-full min-w-[980px] text-left text-sm"><thead className="bg-white/5 text-zinc-400"><tr><th className="p-3">Mobil</th><th className="p-3">Kondisi</th><th className="p-3">Tahun</th><th className="p-3">Harga</th><th className="p-3">Status</th><th className="p-3">Diperbarui</th><th className="p-3">Aksi</th></tr></thead><tbody>{cars.map((car) => {
           const coverUrl = legacyVehicleImageUrl(car.id, car.images[0]?.storageKey);
