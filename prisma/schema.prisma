@@ -40,25 +40,36 @@ model AdminSession {
 }
 
 model Brand {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  slug      String     @unique
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  models    CarModel[]
-  cars      Car[]
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  models      CarModel[]
+  cars        Car[]
+  dealerId    String?
+  dealer      Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ownedModels CarModel[] @relation("OwnedBrandModels")
+
+  @@unique([dealerId, id])
 }
 
 model CarModel {
-  id        String   @id @default(cuid())
-  brandId   String
-  name      String
-  slug      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  cars      Car[]
+  id         String   @id @default(cuid())
+  brandId    String
+  name       String
+  slug       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  cars       Car[]
+  dealerId   String?
+  dealer     Dealer?  @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ownedBrand Brand?   @relation("OwnedBrandModels", fields: [dealerId, brandId], references: [dealerId, id], onDelete: Restrict, onUpdate: Restrict)
+  ownedCars  Car[]    @relation("OwnedModelCars")
 
+  @@unique([dealerId, id])
+  @@unique([dealerId, brandId, id])
   @@unique([brandId, slug])
   @@index([brandId])
 }
@@ -84,7 +95,13 @@ model Car {
   brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Restrict)
   model        CarModel     @relation(fields: [modelId], references: [id], onDelete: Restrict)
   images       CarImage[]
+  dealerId     String?
+  dealer       Dealer?      @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ownedModel   CarModel?    @relation("OwnedModelCars", fields: [dealerId, brandId, modelId], references: [dealerId, brandId, id], onDelete: Restrict, onUpdate: Restrict)
+  ownedImages  CarImage[]   @relation("OwnedCarImages")
 
+  @@unique([dealerId, id])
+  @@index([dealerId, brandId, modelId])
   @@index([condition, status])
   @@index([status, updatedAt])
   @@index([brandId, modelId])
@@ -101,8 +118,13 @@ model CarImage {
   isPrimary  Boolean  @default(false)
   createdAt  DateTime @default(now())
   car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  dealerId   String?
+  dealer     Dealer?  @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ownedCar   Car?     @relation("OwnedCarImages", fields: [dealerId, carId], references: [dealerId, id], onDelete: Cascade, onUpdate: Restrict)
 
+  @@unique([dealerId, id])
   @@unique([carId, storageKey])
+  @@index([dealerId, carId])
   @@index([carId, sortOrder])
   @@index([carId, isPrimary])
 }
@@ -136,6 +158,10 @@ model Dealer {
   updatedAt   DateTime        @updatedAt
   domains     DealerDomain[]
   settings    DealerSettings?
+  brands      Brand[]
+  carModels   CarModel[]
+  cars        Car[]
+  carImages   CarImage[]
 }
 
 model DealerDomain {
