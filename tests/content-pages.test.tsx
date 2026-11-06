@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 const data=vi.hoisted(()=>({dealer:{dealerName:"Dealer Test",logoUrl:null,whatsappNumber:"6281234567890",phone:null,email:null,address:"Alamat showroom test",googleMapsUrl:"https://maps.google.com/test",instagramUrl:null,facebookUrl:null,primaryColor:null,secondaryColor:null},content:{profile:{dealerId:"default",welcomeTitle:"Selamat Datang",welcomeBody:"Informasi dealer test.",welcomeActive:true,aboutSummary:"Ringkasan dealer test.",aboutStory:"Cerita dealer test.",aboutActive:true,showroomKey:null,showroomAlt:"",operatingHours:"Senin 09:00–17:00",operatingHoursActive:true,updatedAt:new Date()},showroomUrl:null,items:[{id:"hero",kind:"MAIN_BANNER",title:"Banner test",body:"",link:"/cars",active:true,sortOrder:0,mediaUrl:"/uploads/banner.jpg"},{id:"promo",kind:"PROMO_BANNER",title:"Promo test",body:"",link:"",active:true,sortOrder:0,mediaUrl:"/uploads/promo.jpg"},{id:"advantage",kind:"ADVANTAGE",title:"Keunggulan test",body:"Fakta test",link:"",active:true,sortOrder:0,mediaUrl:null},{id:"faq",kind:"FAQ",title:"Pertanyaan test",body:"Jawaban test",link:"",active:true,sortOrder:0,mediaUrl:null},{id:"partner",kind:"LEASING_PARTNER",title:"Partner test",body:"",link:"",active:true,sortOrder:0,mediaUrl:"/uploads/partner.jpg"}]}}));
+vi.mock("server-only",()=>({}));
+vi.mock("@/server/dealer/registry",()=>({resolveDealerDomain:vi.fn()}));
 vi.mock("next/server",()=>({connection:vi.fn()}));
 vi.mock("next/image",()=>({default:({alt,src}: {alt:string;src:string})=><span role="img" aria-label={alt} data-src={src} />}));
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));

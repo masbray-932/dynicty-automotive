@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
-import { getSiteUrl } from "@/lib/site-url";
+import { getStorefrontSiteUrl, legacyStorefrontContext } from "@/server/storefront/context";
 import { getAvailableCarSitemapEntries } from "@/server/car-detail/service";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
-  const baseUrl = getSiteUrl();
-  const cars = await getAvailableCarSitemapEntries();
+  const baseUrl = getStorefrontSiteUrl(legacyStorefrontContext);
+  const cars = await getAvailableCarSitemapEntries(legacyStorefrontContext);
   return [
     { url: baseUrl, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/about`, changeFrequency: "monthly", priority: 0.6 },

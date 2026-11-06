@@ -44,3 +44,10 @@ export function createContentMediaKey(namespace: string, mime: string, suffix = 
   if (!extension || !/^[a-zA-Z0-9-]+$/.test(suffix)) throw new Error("Invalid media key input.");
   return `dealers/default/content/${namespace}/${suffix}.${extension}`;
 }
+
+export function isCarImageKeyForCar(key: string, carId: string) {
+  const segment = safeSegment(carId);
+  const [namespace, owner, filename, ...rest] = key.split("/");
+  return Boolean(segment && namespace === "cars" && owner === segment && !rest.length &&
+    filename && /^[a-zA-Z0-9_-][a-zA-Z0-9._-]*$/.test(filename) && !filename.includes(".."));
+}

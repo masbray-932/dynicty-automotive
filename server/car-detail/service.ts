@@ -5,8 +5,11 @@ import { db } from "@/db/client";
 import { buildVehicleTitle, isValidCarSlug, orderDetailImages } from "@/features/car-detail/domain";
 import type { HomepageCar } from "@/server/homepage/service";
 import { getDealerPresentation } from "@/server/homepage/service";
-import { getStorageProvider } from "@/services/storage";
 import { logger } from "@/server/log";
+import type { InventoryContext } from "@/server/inventory/context";
+import { legacyStorefrontContext, requireLegacyStorefront } from "@/server/storefront/context";
+import { legacyStorefrontInventory } from "@/server/storefront/inventory";
+import { legacyVehicleImageUrl } from "@/server/storefront/media";
 
 export type PublicCarDetail = {
   slug: string;
@@ -26,49 +29,50 @@ export type PublicCarDetail = {
   images: Array<{ id: string; url: string; alt: string; isPrimary: boolean }>;
 };
 
-const relatedSelect = {
+const relatedSelect = (scope: ReturnType<typeof legacyStorefrontInventory>) => ({
   id: true, slug: true, condition: true, variant: true, year: true, price: true, transmission: true, mileage: true,
   brand: { select: { name: true } }, model: { select: { name: true } },
-  images: { orderBy: [{ isPrimary: "desc" as const }, { sortOrder: "asc" as const }, { createdAt: "asc" as const }], take: 1, select: { storageKey: true } },
-};
-
-function resolveUrl(key: string) {
-  try { return getStorageProvider().publicUrl(key); } catch { return "/images/car-placeholder.svg"; }
-}
+  images: { where: scope.image, orderBy: [{ isPrimary: "desc" as const }, { sortOrder: "asc" as const }, { createdAt: "asc" as const }], take: 1, select: { storageKey: true } },
+});
 
 function toCard(car: {
   id: string; slug: string; condition: "NEW" | "USED"; variant: string; year: number; price: { toString(): string };
   transmission: string; mileage: number | null; brand: { name: string }; model: { name: string }; images: Array<{ storageKey: string }>;
 }): HomepageCar {
-  return { id: car.id, slug: car.slug, condition: car.condition, brand: car.brand.name, model: car.model.name, variant: car.variant, year: car.year, price: car.price.toString(), transmission: car.transmission, mileage: car.mileage, imageUrl: car.images[0] ? resolveUrl(car.images[0].storageKey) : null };
+  return { id: car.id, slug: car.slug, condition: car.condition, brand: car.brand.name, model: car.model.name, variant: car.variant, year: car.year, price: car.price.toString(), transmission: car.transmission, mileage: car.mileage, imageUrl: legacyVehicleImageUrl(car.id, car.images[0]?.storageKey) };
 }
 
-async function relatedCars(current: { id: string; brandId: string; modelId: string }) {
-  const base = { status: "AVAILABLE" as const, id: { not: current.id } };
+async function relatedCars(scope: ReturnType<typeof legacyStorefrontInventory>, current: { id: string; brandId: string; modelId: string }) {
+  const base = { ...scope.car, id: { not: current.id } };
   const [sameModel, sameBrand, others] = await Promise.all([
-    db.car.findMany({ where: { ...base, modelId: current.modelId }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect }),
-    db.car.findMany({ where: { ...base, brandId: current.brandId, modelId: { not: current.modelId } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect }),
-    db.car.findMany({ where: { ...base, brandId: { not: current.brandId } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect }),
+    db.car.findMany({ where: { ...base, modelId: current.modelId }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect(scope) }),
+    db.car.findMany({ where: { ...base, brandId: current.brandId, modelId: { not: current.modelId } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect(scope) }),
+    db.car.findMany({ where: { ...base, brandId: { not: current.brandId } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect(scope) }),
   ]);
   return [...sameModel, ...sameBrand, ...others].slice(0, 3).map(toCard);
 }
 
-export const getCarDetailPageData = cache(async (slug: string) => {
+// Request-local memoization for the fixed legacy scope only.
+const getLegacyCarDetailPageData = cache(async (slug: string) => {
+  const scope = legacyStorefrontInventory(legacyStorefrontContext);
   if (!isValidCarSlug(slug)) return { kind: "not-found" as const };
   try {
     const car = await db.car.findFirst({
-      where: { slug, status: "AVAILABLE" },
+      where: { ...scope.car, slug },
       select: {
         id: true, slug: true, condition: true, brandId: true, modelId: true, variant: true, year: true, price: true,
         transmission: true, fuelType: true, color: true, mileage: true, description: true, updatedAt: true,
         brand: { select: { name: true, slug: true } }, model: { select: { name: true, slug: true } },
-        images: { select: { id: true, storageKey: true, sortOrder: true, isPrimary: true, createdAt: true } },
+        images: { where: scope.image, select: { id: true, storageKey: true, sortOrder: true, isPrimary: true, createdAt: true } },
       },
     });
     if (!car) return { kind: "not-found" as const };
     const title = buildVehicleTitle({ brand: car.brand.name, model: car.model.name, variant: car.variant, year: car.year });
-    const ordered = orderDetailImages(car.images.map((image) => ({ ...image, url: resolveUrl(image.storageKey) })));
-    const [dealer, related] = await Promise.all([getDealerPresentation(), relatedCars(car)]);
+    const ordered = orderDetailImages(car.images.flatMap(({ storageKey, ...image }) => {
+      const url = legacyVehicleImageUrl(car.id, storageKey);
+      return url ? [{ ...image, url }] : [];
+    }));
+    const [dealer, related] = await Promise.all([getDealerPresentation(), relatedCars(scope, car)]);
     const detail: PublicCarDetail = {
       slug: car.slug, title, condition: car.condition, brand: car.brand, model: car.model, variant: car.variant, year: car.year,
       price: car.price.toString(), transmission: car.transmission, fuelType: car.fuelType, color: car.color, mileage: car.mileage,
@@ -82,9 +86,15 @@ export const getCarDetailPageData = cache(async (slug: string) => {
   }
 });
 
-export async function getAvailableCarSitemapEntries() {
+export async function getCarDetailPageData(context: InventoryContext, slug: string) {
+  requireLegacyStorefront(context);
+  return getLegacyCarDetailPageData(slug);
+}
+
+export async function getAvailableCarSitemapEntries(context: InventoryContext) {
+  const scope = legacyStorefrontInventory(context);
   try {
-    return await db.car.findMany({ where: { status: "AVAILABLE" }, orderBy: { updatedAt: "desc" }, take: 5000, select: { slug: true, updatedAt: true } });
+    return await db.car.findMany({ where: scope.car, orderBy: { updatedAt: "desc" }, take: 5000, select: { slug: true, updatedAt: true } });
   } catch {
     logger.error("public.sitemap_query_failed");
     return [];
