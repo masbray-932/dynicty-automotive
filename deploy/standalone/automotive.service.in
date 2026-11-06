@@ -1,0 +1,27 @@
+[Unit]
+Description=Standalone Automotive (@ID@)
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=auto-@ID@
+Group=auto-@ID@
+WorkingDirectory=@RELEASE@/current
+EnvironmentFile=@CONFIG@/runtime.env
+ExecStartPre=@NODE@ @RELEASE@/current/deploy/standalone/preflight.mjs @HOST@ @DB@ @MEDIA@
+ExecStart=@NODE@ @RELEASE@/current/node_modules/next/dist/bin/next start -H 127.0.0.1 -p @PORT@
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=@MEDIA@ @RELEASE@/current/.next/cache
+
+[Install]
+WantedBy=multi-user.target
