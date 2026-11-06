@@ -84,7 +84,7 @@ function toHomepageCar(car: {
 export const getDealerPresentation = cache(async () => {
   try {
     const { dealerId } = getLegacyPublicDealerScope();
-    const settings = await db.dealerSettings.findUnique({ where: { id: dealerId } });
+    const settings = await db.dealerSettings.findUnique({ where: { id: dealerId, AND: [{ dealerId: null }] } });
     if (!settings) return dealerFallback;
     let logoUrl: string | null = null;
     if (settings.logoStorageKey) {

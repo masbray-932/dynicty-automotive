@@ -11,7 +11,7 @@ import { saveContentItemAction, saveDealerContentAction, deleteContentItemAction
 const empty={message:"",errors:{}};
 function form(values:Record<string,string>={}) {const data=new FormData();for(const [key,value] of Object.entries({kind:"MAIN_BANNER",title:"Preview",body:"",link:"/cars",sortOrder:"0",active:"on",...values}))data.set(key,value);return data;}
 function png(){return imageFile("png", "../../fake.png");}
-beforeEach(()=>{vi.resetAllMocks();mocks.auth.mockResolvedValue({id:"admin"});mocks.count.mockResolvedValue(0);mocks.find.mockResolvedValue(null);mocks.profileFind.mockResolvedValue(null);mocks.put.mockResolvedValue({});mocks.remove.mockResolvedValue(undefined);});
+beforeEach(()=>{vi.resetAllMocks(); mocks.lock.mockResolvedValue([{id:"default"}]);mocks.auth.mockResolvedValue({id:"admin"});mocks.count.mockResolvedValue(0);mocks.find.mockResolvedValue(null);mocks.profileFind.mockResolvedValue(null);mocks.put.mockResolvedValue({});mocks.remove.mockResolvedValue(undefined);});
 describe("CMS authenticated mutation boundaries (mocked services, not DB integration)",()=>{
   it("authenticates every action before validation or persistence",async()=>{
     mocks.auth.mockRejectedValue(new Error("unauthorized"));

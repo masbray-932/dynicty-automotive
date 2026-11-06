@@ -5,8 +5,9 @@ import { db } from "@/db/client";
 import { CarForm } from "@/features/cars/car-form";
 import { ImageManager } from "@/features/cars/image-manager";
 import { updateCarAction } from "@/server/cars/actions";
-import { getStorageProvider } from "@/services/storage";
+import { legacyVehicleImageUrl } from "@/server/storefront/media";
 import { requireAdmin } from "@/server/auth/session";
+import { standaloneOwner, standaloneCar, standaloneModel } from "@/server/standalone/inventory";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> };
 
@@ -15,12 +16,14 @@ export default async function EditCarPage({ params, searchParams }: PageProps) {
   await connection();
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const [car, brands] = await Promise.all([
-    db.car.findUnique({ where: { id }, include: { brand: true, model: true, images: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } } }),
-    db.brand.findMany({ orderBy: { name: "asc" }, include: { models: { orderBy: { name: "asc" }, select: { id: true, name: true } } } }),
+    db.car.findUnique({ where: { ...standaloneCar, id }, include: { brand: true, model: true, images: { where: standaloneOwner, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } } }),
+    db.brand.findMany({ where: standaloneOwner, orderBy: { name: "asc" }, include: { models: { where: standaloneModel, orderBy: { name: "asc" }, select: { id: true, name: true } } } }),
   ]);
   if (!car) notFound();
-  const storage = getStorageProvider();
-  const images = car.images.map((image) => ({ id: image.id, isPrimary: image.isPrimary, sortOrder: image.sortOrder, url: storage.publicUrl(image.storageKey) }));
+  const images = car.images.flatMap(({ storageKey, id, isPrimary, sortOrder }) => {
+    const url = legacyVehicleImageUrl(car.id, storageKey);
+    return url ? [{ id, isPrimary, sortOrder, url }] : [];
+  });
   const updateAction = updateCarAction.bind(null, car.id);
   const notice = query.notice === "created" ? "Mobil berhasil dibuat. Tambahkan gambar di bawah." : query.notice === "image-deleted" ? "Gambar berhasil dihapus." : query.notice === "image-cleanup-warning" ? "Data gambar dihapus, tetapi file storage perlu dibersihkan manual." : "";
   return (

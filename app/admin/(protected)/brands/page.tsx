@@ -3,11 +3,12 @@ import { connection } from "next/server";
 import { db } from "@/db/client";
 import { BrandForm, ModelForm } from "@/features/master-data/master-data-forms";
 import { requireAdmin } from "@/server/auth/session";
+import { standaloneOwner, standaloneModel } from "@/server/standalone/inventory";
 
 export default async function BrandManagementPage() {
   await requireAdmin();
   await connection();
-  const brands = await db.brand.findMany({ orderBy: { name: "asc" }, include: { models: { orderBy: { name: "asc" } } } });
+  const brands = await db.brand.findMany({ where: standaloneOwner, orderBy: { name: "asc" }, include: { models: { where: standaloneModel, orderBy: { name: "asc" } } } });
   const brandOptions = brands.map(({ id, name }) => ({ id, name }));
   return (
     <div className="space-y-8">

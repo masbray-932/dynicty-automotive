@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "../server/auth/password";
+import { bootstrapPrimaryAdmin } from "./primary-admin";
 import { seedAdminSchema } from "../validation/auth";
 
 function assertStagingTarget() {
@@ -20,15 +20,10 @@ async function main() {
     email: process.env.STAGING_ADMIN_EMAIL,
     password: process.env.STAGING_ADMIN_PASSWORD,
   });
-  const passwordHash = await hashPassword(credentials.password);
-  await db.adminUser.upsert({
-    where: { email: credentials.email },
-    update: { passwordHash },
-    create: { email: credentials.email, passwordHash },
-  });
+  await bootstrapPrimaryAdmin(db, credentials);
 
   await db.dealerSettings.upsert({
-    where: { id: "default" },
+    where: { id: "default", AND: [{ dealerId: null }] },
     create: {
       id: "default",
       dealerName: "Dynicty Automotive Preview",
@@ -57,9 +52,9 @@ async function main() {
   ];
   const models = [] as Array<(typeof catalog)[number] & { brandId: string; modelId: string }>;
   for (const item of catalog) {
-    const brand = await db.brand.upsert({ where: { slug: item.brandSlug }, update: { name: item.brand }, create: { name: item.brand, slug: item.brandSlug } });
+    const brand = await db.brand.upsert({ where: { slug: item.brandSlug, dealerId: null }, update: { name: item.brand }, create: { name: item.brand, slug: item.brandSlug } });
     const model = await db.carModel.upsert({
-      where: { brandId_slug: { brandId: brand.id, slug: item.modelSlug } },
+      where: { brandId_slug: { brandId: brand.id, slug: item.modelSlug }, dealerId: null },
       update: { name: item.model },
       create: { brandId: brand.id, name: item.model, slug: item.modelSlug },
     });
@@ -86,7 +81,7 @@ async function main() {
       status,
       featured: status === "AVAILABLE" && index < 3,
     };
-    await db.car.upsert({ where: { slug }, update: data, create: { slug, ...data } });
+    await db.car.upsert({ where: { slug, dealerId: null, brand: { dealerId: null }, model: { dealerId: null, brand: { dealerId: null } } }, update: data, create: { slug, ...data } });
   }
 
   console.info("Staging-only admin, DealerSettings, and 15 preview vehicles are ready.");

@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+function isHttpsOrigin(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password && url.pathname === "/" && !url.search && !url.hash;
+  } catch { return false; }
+}
+
 const optionalUrl = z.union([z.literal(""), z.url()]).optional();
 
 export const serverEnvSchema = z
@@ -12,6 +19,7 @@ export const serverEnvSchema = z
       .min(32, "SESSION_SECRET must contain at least 32 characters."),
     STORAGE_PROVIDER: z.enum(["local", "r2"]).default("local"),
     TRUST_PROXY: z.enum(["true", "false"]).default("false"),
+    ALLOW_STANDALONE_LOCAL_STORAGE: z.enum(["true", "false"]).default("false"),
     ALLOW_STAGING_LOCAL_STORAGE: z.enum(["true", "false"]).default("false"),
     NEXT_PUBLIC_SITE_URL: optionalUrl,
     R2_ACCOUNT_ID: z.string().optional(),
@@ -24,14 +32,17 @@ export const serverEnvSchema = z
     if (env.NODE_ENV === "production") {
       if (!env.NEXT_PUBLIC_SITE_URL) {
         context.addIssue({ code: "custom", path: ["NEXT_PUBLIC_SITE_URL"], message: "NEXT_PUBLIC_SITE_URL is required in production." });
-      } else if (!env.NEXT_PUBLIC_SITE_URL.startsWith("https://")) {
-        context.addIssue({ code: "custom", path: ["NEXT_PUBLIC_SITE_URL"], message: "NEXT_PUBLIC_SITE_URL must use HTTPS in production." });
+      } else if (!isHttpsOrigin(env.NEXT_PUBLIC_SITE_URL)) {
+        context.addIssue({ code: "custom", path: ["NEXT_PUBLIC_SITE_URL"], message: "NEXT_PUBLIC_SITE_URL must be a bare HTTPS origin in production." });
       }
       if (env.SESSION_SECRET.length < 48 || /replace|secret|password|change.?me/i.test(env.SESSION_SECRET)) {
         context.addIssue({ code: "custom", path: ["SESSION_SECRET"], message: "SESSION_SECRET must be at least 48 characters and non-placeholder in production." });
       }
-      if (env.STORAGE_PROVIDER === "local" && !(env.DEPLOYMENT_ENV === "staging" && env.ALLOW_STAGING_LOCAL_STORAGE === "true")) {
-        context.addIssue({ code: "custom", path: ["STORAGE_PROVIDER"], message: "Local storage requires explicit isolated staging opt-in and is forbidden for production." });
+      const isolatedLocalStorage =
+        (env.DEPLOYMENT_ENV === "staging" && env.ALLOW_STAGING_LOCAL_STORAGE === "true") ||
+        (env.DEPLOYMENT_ENV === "production" && env.ALLOW_STANDALONE_LOCAL_STORAGE === "true");
+      if (env.STORAGE_PROVIDER === "local" && !isolatedLocalStorage) {
+        context.addIssue({ code: "custom", path: ["STORAGE_PROVIDER"], message: "Local storage requires explicit opt-in for an isolated staging or standalone production installation." });
       }
       if (env.TRUST_PROXY !== "true") {
         context.addIssue({ code: "custom", path: ["TRUST_PROXY"], message: "TRUST_PROXY=true is required for the documented production Nginx topology." });

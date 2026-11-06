@@ -41,8 +41,9 @@ function failed(error: unknown): ActionState {
 // All CMS writes take the same owner-row lock: active count and writes are atomic,
 // including concurrent requests from different administrators.
 async function lockOwner(tx: Prisma.TransactionClient, dealerId: typeof LEGACY_DEALER_SCOPE.dealerId) {
-  await tx.dealerSettings.upsert({where:{id:dealerId},create:{id:dealerId},update:{}});
-  await tx.$queryRaw`SELECT "id" FROM "DealerSettings" WHERE "id" = ${dealerId} FOR UPDATE`;
+  await tx.dealerSettings.upsert({where:{id:dealerId,AND:[{dealerId:null}]},create:{id:dealerId},update:{}});
+  const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "DealerSettings" WHERE "id" = ${dealerId} AND "dealerId" IS NULL FOR UPDATE`;
+  if (!rows.length) throw new ContentError("Pengaturan dealer tidak tersedia.");
 }
 export async function saveDealerContentAction(_state: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();
