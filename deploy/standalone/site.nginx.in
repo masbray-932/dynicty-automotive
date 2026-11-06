@@ -1,0 +1,50 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name @HOST@;
+    if ($http_host !~* "^@HOST_REGEX@(?::80)?$") { return 421; }
+    return 308 https://@HOST@$request_uri;
+}
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name @HOST@;
+    ssl_certificate @CERT@;
+    ssl_certificate_key @KEY@;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    if ($http_host !~* "^@HOST_REGEX@(?::443)?$") { return 421; }
+    if ($ssl_server_name !~* "^@HOST_REGEX@$") { return 421; }
+
+    # 10 MiB Next Server Action cap plus proxy headroom.
+    client_max_body_size 12m;
+
+    location = /uploads { return 404; }
+    location ^~ /uploads/ {
+        # Match normalized URI and serve only supported raster filenames.
+        if ($uri !~* "^/uploads/(?:[a-z0-9_-][a-z0-9._-]*/)+[a-z0-9_-][a-z0-9._-]*\.(?:jpe?g|png|webp)$") { return 404; }
+        alias @MEDIA@/;
+        disable_symlinks on;
+        autoindex off;
+        limit_except GET { deny all; }
+        types { image/jpeg jpg jpeg; image/png png; image/webp webp; }
+        default_type application/octet-stream;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:@PORT@;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host @HOST@;
+        proxy_set_header X-Forwarded-Host @HOST@;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Prefix "";
+        proxy_set_header Forwarded "";
+        proxy_read_timeout 60s;
+    }
+}
