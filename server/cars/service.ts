@@ -2,93 +2,96 @@ import "server-only";
 
 import { Prisma } from "@prisma/client";
 import { db } from "@/db/client";
-import { fallbackPrimaryImageId, modelBelongsToBrand, reorderImageIds, uniqueSlug } from "@/features/cars/domain";
+import { fallbackPrimaryImageId, reorderImageIds, uniqueSlug } from "@/features/cars/domain";
 import { getStorageProvider } from "@/services/storage";
-import { createCarImageKey } from "@/services/storage/key";
+import { createCarImageKey, isCarImageKeyForCar } from "@/services/storage/key";
 import type { CarFormValues } from "@/validation/car";
 import { parseMileage, parsePrice } from "@/validation/car";
 import { requireAdmin } from "@/server/auth/session";
+import { standaloneCar, standaloneCarImage, standaloneModel, standaloneOwner } from "@/server/standalone/inventory";
 
 export class InvalidModelRelationError extends Error {}
+const serializable = { isolationLevel: Prisma.TransactionIsolationLevel.Serializable };
+const carScope = (id: string) => ({ ...standaloneCar, id });
+const imageScope = (carId: string) => ({ ...standaloneCarImage, carId });
+
+async function findModel(tx: Prisma.TransactionClient, brandId: string, modelId: string) {
+  const model = await tx.carModel.findFirst({
+    where: { ...standaloneModel, id: modelId, brandId }, select: { name: true, brand: { select: { name: true } } },
+  });
+  if (!model) throw new InvalidModelRelationError("Model tidak sesuai dengan merek yang dipilih.");
+  return model;
+}
 
 export async function assertModelBelongsToBrand(brandId: string, modelId: string) {
   await requireAdmin();
-  const model = await db.carModel.findUnique({ where: { id: modelId }, select: { brandId: true } });
-  if (!modelBelongsToBrand(model, brandId)) throw new InvalidModelRelationError("Model tidak sesuai dengan merek yang dipilih.");
+  await findModel(db, brandId, modelId);
 }
 
-async function carData(values: CarFormValues, excludeId?: string) {
-  await assertModelBelongsToBrand(values.brandId, values.modelId);
-  const [brand, model] = await Promise.all([
-    db.brand.findUniqueOrThrow({ where: { id: values.brandId }, select: { name: true } }),
-    db.carModel.findUniqueOrThrow({ where: { id: values.modelId }, select: { name: true } }),
-  ]);
-  const slug = await uniqueSlug(`${brand.name}-${model.name}-${values.variant}-${values.year}`, async (candidate) =>
-    Boolean(await db.car.findFirst({ where: { slug: candidate, ...(excludeId ? { NOT: { id: excludeId } } : {}) }, select: { id: true } })),
+async function carData(tx: Prisma.TransactionClient, values: CarFormValues, excludeId?: string) {
+  const model = await findModel(tx, values.brandId, values.modelId);
+  const slug = await uniqueSlug(`${model.brand.name}-${model.name}-${values.variant}-${values.year}`, async (candidate) =>
+    Boolean(await tx.car.findFirst({ where: { ...standaloneOwner, slug: candidate, ...(excludeId ? { NOT: { id: excludeId } } : {}) }, select: { id: true } })),
   );
 
   return {
-    condition: values.condition,
-    brandId: values.brandId,
-    modelId: values.modelId,
-    variant: values.variant,
-    year: values.year,
-    price: new Prisma.Decimal(parsePrice(values.price)),
-    transmission: values.transmission,
-    fuelType: values.fuelType,
-    color: values.color,
-    mileage: parseMileage(values.mileage),
-    description: values.description,
-    status: values.status,
-    featured: values.featured,
-    slug,
+    condition: values.condition, brandId: values.brandId, modelId: values.modelId,
+    variant: values.variant, year: values.year, price: new Prisma.Decimal(parsePrice(values.price)),
+    transmission: values.transmission, fuelType: values.fuelType, color: values.color,
+    mileage: parseMileage(values.mileage), description: values.description, status: values.status,
+    featured: values.featured, slug,
   };
 }
 
 export async function createCar(values: CarFormValues) {
   await requireAdmin();
-  return db.car.create({ data: await carData(values), select: { id: true, slug: true } });
+  return db.$transaction(async (tx) => tx.car.create({
+    data: { ...await carData(tx, values), ...standaloneOwner }, select: { id: true, slug: true },
+  }), serializable);
 }
 
 export async function updateCar(id: string, values: CarFormValues) {
   await requireAdmin();
-  return db.car.update({ where: { id }, data: await carData(values, id), select: { id: true, slug: true } });
+  return db.$transaction(async (tx) => tx.car.update({
+    where: carScope(id), data: await carData(tx, values, id), select: { id: true, slug: true },
+  }), serializable);
+}
+
+async function deleteScopedImageObject(carId: string, key: string) {
+  if (!isCarImageKeyForCar(key, carId)) throw new Error("Invalid vehicle image namespace.");
+  await getStorageProvider().delete(key);
 }
 
 export async function deleteCarWithMedia(id: string) {
   await requireAdmin();
-  const car = await db.car.findUnique({ where: { id }, include: { images: { select: { storageKey: true } } } });
-  if (!car) return { deleted: false, failedKeys: [] as string[] };
-  await db.car.delete({ where: { id } });
-
-  const storage = getStorageProvider();
-  const results = await Promise.allSettled(car.images.map((image) => storage.delete(image.storageKey)));
-  const failedKeys = car.images.filter((_, index) => results[index].status === "rejected").map((image) => image.storageKey);
-  return { deleted: true, failedKeys };
+  // Do not cascade a foreign-owned row even if imported data is inconsistent.
+  const where = { ...carScope(id), images: { every: standaloneOwner } };
+  const keys = await db.$transaction(async (tx) => {
+    const car = await tx.car.findUnique({ where, select: { images: { where: standaloneOwner, select: { storageKey: true } } } });
+    if (!car) return null;
+    await tx.car.delete({ where });
+    return car.images.map((image) => image.storageKey);
+  }, serializable);
+  if (!keys) return { deleted: false, failedKeys: [] as string[] };
+  const results = await Promise.allSettled(keys.map((key) => deleteScopedImageObject(id, key)));
+  return { deleted: true, failedKeys: keys.filter((_, index) => results[index].status === "rejected") };
 }
 
 export async function uploadCarImage(carId: string, file: File) {
   await requireAdmin();
+  if (!await db.car.findUnique({ where: carScope(carId), select: { id: true } })) throw new Error("Mobil tidak ditemukan.");
   const storage = getStorageProvider();
   const key = createCarImageKey(carId, file.name, crypto.randomUUID(), file.type);
 
   try {
     await storage.put({ key, body: new Uint8Array(await file.arrayBuffer()), contentType: file.type });
-    return await db.$transaction(async (transaction) => {
-      const [car, aggregate] = await Promise.all([
-        transaction.car.findUnique({ where: { id: carId }, select: { id: true } }),
-        transaction.carImage.aggregate({ where: { carId }, _max: { sortOrder: true }, _count: true }),
-      ]);
-      if (!car) throw new Error("Mobil tidak ditemukan.");
-      return transaction.carImage.create({
-        data: {
-          carId,
-          storageKey: key,
-          sortOrder: (aggregate._max.sortOrder ?? -1) + 1,
-          isPrimary: aggregate._count === 0,
-        },
+    return await db.$transaction(async (tx) => {
+      if (!await tx.car.findUnique({ where: carScope(carId), select: { id: true } })) throw new Error("Mobil tidak ditemukan.");
+      const aggregate = await tx.carImage.aggregate({ where: imageScope(carId), _max: { sortOrder: true }, _count: true });
+      return tx.carImage.create({
+        data: { ...standaloneOwner, carId, storageKey: key, sortOrder: (aggregate._max.sortOrder ?? -1) + 1, isPrimary: aggregate._count === 0 },
       });
-    });
+    }, serializable);
   } catch (error) {
     await storage.delete(key).catch(() => undefined);
     throw error;
@@ -97,42 +100,43 @@ export async function uploadCarImage(carId: string, file: File) {
 
 export async function setPrimaryImage(carId: string, imageId: string) {
   await requireAdmin();
-  await db.$transaction(async (transaction) => {
-    const image = await transaction.carImage.findFirst({ where: { id: imageId, carId }, select: { id: true } });
+  const where = imageScope(carId);
+  await db.$transaction(async (tx) => {
+    const image = await tx.carImage.findUnique({ where: { ...where, id: imageId }, select: { id: true } });
     if (!image) throw new Error("Gambar tidak ditemukan.");
-    await transaction.carImage.updateMany({ where: { carId, isPrimary: true }, data: { isPrimary: false } });
-    await transaction.carImage.update({ where: { id: imageId }, data: { isPrimary: true } });
-  });
+    await tx.carImage.updateMany({ where: { ...where, isPrimary: true }, data: { isPrimary: false } });
+    await tx.carImage.update({ where: { ...where, id: imageId }, data: { isPrimary: true } });
+  }, serializable);
 }
 
 export async function reorderCarImage(carId: string, imageId: string, direction: "up" | "down") {
   await requireAdmin();
-  await db.$transaction(async (transaction) => {
-    const images = await transaction.carImage.findMany({ where: { carId }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } });
+  const where = imageScope(carId);
+  await db.$transaction(async (tx) => {
+    const images = await tx.carImage.findMany({ where, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } });
     const ordered = reorderImageIds(images.map((image) => image.id), imageId, direction);
     for (const [sortOrder, id] of ordered.entries()) {
-      await transaction.carImage.update({ where: { id }, data: { sortOrder } });
+      await tx.carImage.update({ where: { ...where, id }, data: { sortOrder } });
     }
-  });
+  }, serializable);
 }
 
 export async function deleteCarImage(carId: string, imageId: string) {
   await requireAdmin();
-  const result = await db.$transaction(async (transaction) => {
-    const image = await transaction.carImage.findFirst({ where: { id: imageId, carId } });
-    if (!image) throw new Error("Gambar tidak ditemukan.");
-    await transaction.carImage.delete({ where: { id: imageId } });
-    const remaining = await transaction.carImage.findMany({ where: { carId }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, isPrimary: true } });
+  const where = imageScope(carId);
+  const key = await db.$transaction(async (tx) => {
+    const image = await tx.carImage.delete({ where: { ...where, id: imageId }, select: { storageKey: true, isPrimary: true } });
+    const remaining = await tx.carImage.findMany({ where, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } });
     const fallbackId = fallbackPrimaryImageId(remaining.map((item) => item.id), image.isPrimary);
-    if (fallbackId) await transaction.carImage.update({ where: { id: fallbackId }, data: { isPrimary: true } });
+    if (fallbackId) await tx.carImage.update({ where: { ...where, id: fallbackId }, data: { isPrimary: true } });
     for (const [sortOrder, item] of remaining.entries()) {
-      await transaction.carImage.update({ where: { id: item.id }, data: { sortOrder } });
+      await tx.carImage.update({ where: { ...where, id: item.id }, data: { sortOrder } });
     }
     return image.storageKey;
-  });
+  }, serializable);
 
   try {
-    await getStorageProvider().delete(result);
+    await deleteScopedImageObject(carId, key);
     return { storageCleanupFailed: false };
   } catch {
     return { storageCleanupFailed: true };

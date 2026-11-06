@@ -1,5 +1,7 @@
 # Dynicty Automotive Production Deployment
 
+For independent customer installations, follow the [standalone installation contract](./AUTOMOTIVE_STANDALONE_INSTALLATION.md). This guide describes the earlier Dynicty deployment topology; its R2 adapter cannot write or delete files.
+
 Target: `https://automotive.dynicty.com`. These instructions are prepared, not evidence that the infrastructure exists.
 
 ## 1. System requirements

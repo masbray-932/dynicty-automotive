@@ -66,7 +66,7 @@ describe("dealer branding write protection", () => {
     form.set("$ACTION_0:0", "metadata");
     expect(await saveDealerSettingsAction(emptyActionState, form)).toMatchObject({ status: "success" });
     expect(mocks.upsert).toHaveBeenCalledExactlyOnceWith({
-      where: { id: "default" }, create: { id: "default", ...operational }, update: operational,
+      where: { id: "default", AND: [{ dealerId: null }] }, create: { id: "default", ...operational }, update: operational,
     });
     expect(row).toMatchObject({ ...operational, ...branding });
     expect(mocks.refresh).toHaveBeenCalledWith("/", "layout");

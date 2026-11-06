@@ -112,10 +112,10 @@ describe("legacy session and data boundaries", () => {
 
   it("preserves the authenticated settings workflow and rejects branding and scope overrides", async () => {
     expect(await getAdminDealerSettings()).toMatchObject({ kind: "success", settings: { primaryColor: "#123456" } });
-    expect(mocks.settingsRead).toHaveBeenCalledWith({ where: { id: "default" } });
+    expect(mocks.settingsRead).toHaveBeenCalledWith({ where: { id: "default", AND: [{ dealerId: null }] } });
     await expect(upsertDealerSettings(operations)).resolves.toEqual(operations);
     expect(mocks.settingsWrite).toHaveBeenCalledExactlyOnceWith({
-      where: { id: "default" }, create: { id: "default", ...operations }, update: operations,
+      where: { id: "default", AND: [{ dealerId: null }] }, create: { id: "default", ...operations }, update: operations,
     });
     await expect(upsertDealerSettings({ ...operations, dealerId: otherScope.dealerId })).rejects.toThrow(TypeError);
     const form = new FormData();
@@ -133,8 +133,9 @@ describe("legacy session and data boundaries", () => {
     const form = new FormData();
     form.set("dealerId", otherScope.dealerId);
     form.set("welcomeTitle", "Selamat datang");
+    mocks.lock.mockResolvedValue([{ id: "default" }]);
     expect((await saveDealerContentAction(emptyActionState, form)).errors).toEqual({});
-    expect(mocks.owner).toHaveBeenCalledWith({ where: { id: "default" }, create: { id: "default" }, update: {} });
+    expect(mocks.owner).toHaveBeenCalledWith({ where: { id: "default", AND: [{ dealerId: null }] }, create: { id: "default" }, update: {} });
     expect(mocks.lock.mock.calls[0][1]).toBe("default");
     expect(mocks.contentWrite).toHaveBeenCalledWith(expect.objectContaining({
       where: { dealerId: "default" }, create: expect.objectContaining({ dealerId: "default" }),
@@ -144,9 +145,9 @@ describe("legacy session and data boundaries", () => {
   it("loads public legacy branding and active CMS content independently of the admin session", async () => {
     expect(await getDealerPresentation()).toMatchObject({ dealerName: operations.dealerName, primaryColor: "#123456" });
     expect(await getPublicDealerContent()).toEqual({ profile: null, showroomUrl: null, items: [] });
-    expect(mocks.settingsRead).toHaveBeenCalledWith({ where: { id: "default" } });
-    expect(mocks.contentRead).toHaveBeenCalledWith({ where: { dealerId: "default" } });
-    expect(mocks.items).toHaveBeenCalledWith(expect.objectContaining({ where: { dealerId: "default", active: true } }));
+    expect(mocks.settingsRead).toHaveBeenCalledWith({ where: { id: "default", AND: [{ dealerId: null }] } });
+    expect(mocks.contentRead).toHaveBeenCalledWith({ where: { dealerId: "default", dealer: { dealerId: null } } });
+    expect(mocks.items).toHaveBeenCalledWith(expect.objectContaining({ where: { dealerId: "default", dealer: { dealerId: null }, active: true } }));
     expect(mocks.cookies).not.toHaveBeenCalled();
     expect(mocks.headers).not.toHaveBeenCalled();
   });

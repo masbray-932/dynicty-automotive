@@ -14,8 +14,8 @@ export const getPublicDealerContent = cache(async () => {
   try {
     const { dealerId } = getLegacyPublicDealerScope();
     const [profile, items] = await Promise.all([
-      db.dealerContent.findUnique({where:{dealerId}}),
-      db.dealerContentItem.findMany({where:{dealerId,active:true},orderBy:[{sortOrder:"asc"},{id:"asc"}],take:150}),
+      db.dealerContent.findUnique({where:{dealerId,dealer:{dealerId:null}}}),
+      db.dealerContentItem.findMany({where:{dealerId,dealer:{dealerId:null},active:true},orderBy:[{sortOrder:"asc"},{id:"asc"}],take:150}),
     ]);
     return {profile, showroomUrl: contentMediaUrl(profile?.showroomKey ?? null), items:items.map(item => ({id:item.id, kind:item.kind, title:item.title, body:item.body, link:item.link, active:item.active, sortOrder:item.sortOrder, mediaUrl:contentMediaUrl(item.mediaKey)}))};
   } catch { logger.error("public.content_read_failed"); return {profile:null,showroomUrl:null,items:[] as PublicContentItem[]}; }
@@ -24,8 +24,8 @@ export async function getAdminDealerContent() {
   await requireAdmin();
   const { dealerId } = LEGACY_DEALER_SCOPE;
   const [profile, items] = await Promise.all([
-    db.dealerContent.findUnique({where:{dealerId}}),
-    db.dealerContentItem.findMany({where:{dealerId},orderBy:[{kind:"asc"},{sortOrder:"asc"},{id:"asc"}],take:150}),
+    db.dealerContent.findUnique({where:{dealerId,dealer:{dealerId:null}}}),
+    db.dealerContentItem.findMany({where:{dealerId,dealer:{dealerId:null}},orderBy:[{kind:"asc"},{sortOrder:"asc"},{id:"asc"}],take:150}),
   ]);
   return {profile, showroomUrl:contentMediaUrl(profile?.showroomKey ?? null),items:items.map(item=>({...item,mediaUrl:contentMediaUrl(item.mediaKey)}))};
 }

@@ -6,7 +6,7 @@ vi.mock("@/server/auth/session", () => ({ requireAdmin: mocks.auth }));
 vi.mock("@/server/log", () => ({ logger: { error: mocks.log, warn: mocks.log } }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.refresh }));
 vi.mock("@/services/storage", () => ({ getStorageProvider: () => ({ put: mocks.put, delete: mocks.remove }) }));
-vi.mock("@/db/client", () => ({ db: { dealerSettings: { upsert: mocks.settings }, $transaction: async (fn: (tx: unknown) => unknown) => fn({ car: { findUnique: mocks.car }, carImage: { aggregate: mocks.aggregate, create: mocks.create } }) } }));
+vi.mock("@/db/client", () => ({ db: { car: { findUnique: mocks.car }, dealerSettings: { upsert: mocks.settings }, $transaction: async (fn: (tx: unknown) => unknown) => fn({ car: { findUnique: mocks.car }, carImage: { aggregate: mocks.aggregate, create: mocks.create } }) } }));
 import { uploadCarImage } from "@/server/cars/service";
 import { uploadImageAction } from "@/server/cars/actions";
 import { saveDealerSettingsAction } from "@/server/settings/actions";

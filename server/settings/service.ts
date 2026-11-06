@@ -8,7 +8,7 @@ import { LEGACY_DEALER_SCOPE } from "@/server/dealer/scope";
 export async function getAdminDealerSettings() {
   await requireAdmin();
   try {
-    const settings = await db.dealerSettings.findUnique({ where: { id: LEGACY_DEALER_SCOPE.dealerId } });
+    const settings = await db.dealerSettings.findUnique({ where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] } });
     if (!settings) return { kind: "success" as const, settings: null, logoUrl: null };
     let logoUrl: string | null = null;
     if (settings.logoStorageKey) { try { logoUrl = getStorageProvider().publicUrl(settings.logoStorageKey); } catch { logoUrl = null; } }
@@ -30,5 +30,5 @@ export async function upsertDealerSettings(input: unknown) {
     dealerSettingsSchema.parse(input);
   // Keep create and update limited to operational data, even if the schema changes later.
   const data = { dealerName, phone, whatsappNumber, email, address, googleMapsUrl, instagramUrl, facebookUrl };
-  return db.dealerSettings.upsert({ where: { id: LEGACY_DEALER_SCOPE.dealerId }, create: { id: LEGACY_DEALER_SCOPE.dealerId, ...data }, update: data });
+  return db.dealerSettings.upsert({ where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] }, create: { id: LEGACY_DEALER_SCOPE.dealerId, ...data }, update: data });
 }

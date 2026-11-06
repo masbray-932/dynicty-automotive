@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
 import { slugify, uniqueSlug } from "@/features/cars/domain";
 import { requireAdmin } from "@/server/auth/session";
+import { standaloneModel, standaloneOwner } from "@/server/standalone/inventory";
 import type { ActionState } from "@/types/action-state";
 import { brandSchema, carModelSchema } from "@/validation/master-data";
 
@@ -20,14 +21,14 @@ export async function saveBrandAction(_state: ActionState, formData: FormData): 
   try {
     if (parsed.data.id) {
       const slug = await uniqueSlug(parsed.data.name, async (candidate) =>
-        Boolean(await db.brand.findFirst({ where: { slug: candidate, NOT: { id: parsed.data.id } }, select: { id: true } })),
+        Boolean(await db.brand.findFirst({ where: { ...standaloneOwner, slug: candidate, NOT: { id: parsed.data.id } }, select: { id: true } })),
       );
-      await db.brand.update({ where: { id: parsed.data.id }, data: { name: parsed.data.name, slug } });
+      await db.brand.update({ where: { ...standaloneOwner, id: parsed.data.id }, data: { name: parsed.data.name, slug } });
     } else {
       const slug = await uniqueSlug(parsed.data.name, async (candidate) =>
-        Boolean(await db.brand.findUnique({ where: { slug: candidate }, select: { id: true } })),
+        Boolean(await db.brand.findUnique({ where: { ...standaloneOwner, slug: candidate }, select: { id: true } })),
       );
-      await db.brand.create({ data: { name: parsed.data.name, slug } });
+      await db.brand.create({ data: { ...standaloneOwner, name: parsed.data.name, slug } });
     }
   } catch (error) {
     if (duplicateMessage(error)) return { message: "Nama merek sudah digunakan.", errors: { name: ["Gunakan nama lain."] } };
@@ -48,21 +49,26 @@ export async function saveModelAction(_state: ActionState, formData: FormData): 
   });
   if (!parsed.success) return { message: "Periksa data model.", errors: parsed.error.flatten().fieldErrors };
 
-  const brandExists = await db.brand.findUnique({ where: { id: parsed.data.brandId }, select: { id: true } });
-  if (!brandExists) return { message: "Merek tidak ditemukan.", errors: { brandId: ["Pilih merek yang tersedia."] } };
-
   try {
-    const slug = slugify(parsed.data.name);
-    if (parsed.data.id) {
-      const existing = await db.carModel.findUnique({ where: { id: parsed.data.id }, select: { brandId: true, _count: { select: { cars: true } } } });
-      if (!existing) return { message: "Model tidak ditemukan.", errors: {} };
-      if (existing.brandId !== parsed.data.brandId && existing._count.cars > 0) {
-        return { message: "Merek model tidak dapat dipindahkan karena sudah digunakan mobil.", errors: { brandId: ["Pertahankan merek sebelumnya."] } };
+    const blocked = await db.$transaction(async (tx): Promise<ActionState | null> => {
+      const brandExists = await tx.brand.findUnique({ where: { ...standaloneOwner, id: parsed.data.brandId }, select: { id: true } });
+      if (!brandExists) return { message: "Merek tidak ditemukan.", errors: { brandId: ["Pilih merek yang tersedia."] } };
+
+      const slug = slugify(parsed.data.name);
+      if (parsed.data.id) {
+        const where = { ...standaloneModel, id: parsed.data.id };
+        const existing = await tx.carModel.findUnique({ where, select: { brandId: true, _count: { select: { cars: true } } } });
+        if (!existing) return { message: "Model tidak ditemukan.", errors: {} };
+        if (existing.brandId !== parsed.data.brandId && existing._count.cars > 0) {
+          return { message: "Merek model tidak dapat dipindahkan karena sudah digunakan mobil.", errors: { brandId: ["Pertahankan merek sebelumnya."] } };
+        }
+        await tx.carModel.update({ where, data: { brandId: parsed.data.brandId, name: parsed.data.name, slug } });
+      } else {
+        await tx.carModel.create({ data: { ...standaloneOwner, brandId: parsed.data.brandId, name: parsed.data.name, slug } });
       }
-      await db.carModel.update({ where: { id: parsed.data.id }, data: { brandId: parsed.data.brandId, name: parsed.data.name, slug } });
-    } else {
-      await db.carModel.create({ data: { brandId: parsed.data.brandId, name: parsed.data.name, slug } });
-    }
+      return null;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    if (blocked) return blocked;
   } catch (error) {
     if (duplicateMessage(error)) return { message: "Model tersebut sudah ada pada merek ini.", errors: { name: ["Gunakan nama lain."] } };
     return { message: "Model tidak dapat disimpan.", errors: {} };

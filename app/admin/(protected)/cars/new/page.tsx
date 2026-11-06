@@ -5,11 +5,12 @@ import { db } from "@/db/client";
 import { CarForm } from "@/features/cars/car-form";
 import { createCarAction } from "@/server/cars/actions";
 import { requireAdmin } from "@/server/auth/session";
+import { standaloneOwner, standaloneModel } from "@/server/standalone/inventory";
 
 export default async function NewCarPage() {
   await requireAdmin();
   await connection();
-  const brands = await db.brand.findMany({ orderBy: { name: "asc" }, include: { models: { orderBy: { name: "asc" }, select: { id: true, name: true } } } });
+  const brands = await db.brand.findMany({ where: standaloneOwner, orderBy: { name: "asc" }, include: { models: { where: standaloneModel, orderBy: { name: "asc" }, select: { id: true, name: true } } } });
   return (
     <div className="space-y-6">
       <div><h1 className="text-3xl font-bold text-white">Tambah Mobil</h1><p className="mt-2 text-zinc-400">Lengkapi data kendaraan. Gambar dapat ditambahkan setelah mobil dibuat.</p></div>
