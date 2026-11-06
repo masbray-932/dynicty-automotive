@@ -51,3 +51,8 @@ export function isCarImageKeyForCar(key: string, carId: string) {
   return Boolean(segment && namespace === "cars" && owner === segment && !rest.length &&
     filename && /^[a-zA-Z0-9_-][a-zA-Z0-9._-]*$/.test(filename) && !filename.includes(".."));
 }
+
+export function isDealerLogoKey(key: string) {
+  return /^dealer\/logo\/[a-z0-9_-][a-z0-9._-]*\.(?:jpe?g|png|webp)$/i.test(key) &&
+    !key.includes("..") && !/\s/.test(key);
+}

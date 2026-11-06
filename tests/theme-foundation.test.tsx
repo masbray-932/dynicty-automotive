@@ -128,7 +128,7 @@ describe("Automotive v2 contract", () => {
     expect(first).toContain("--auto-action-foreground:#000000");
   });
 
-  it("maps only legacy primary into the real public layout and keeps Admin on fixed root colors", async () => {
+  it("maps legacy primary and accent into the real public layout and keeps Admin on fixed root colors", async () => {
     const storefront = await PublicLayout({ children: <Button>Public</Button> });
     const html = renderToStaticMarkup(<RootLayout params={Promise.resolve({})}>{storefront}<AdminLayout><Button>Admin</Button></AdminLayout></RootLayout>);
     const bodyStyle = html.match(/<body[^>]*style="([^"]+)"/)?.[1];
@@ -136,8 +136,8 @@ describe("Automotive v2 contract", () => {
     expect(bodyStyle).toContain("--auto-action-primary:#DC2626");
     expect(bodyStyle).not.toContain("--color-");
     expect(storefrontStyle).toContain("--color-primary:#FFFFFF");
-    expect(storefrontStyle).toContain("--color-accent:#DC2626");
-    expect(storefrontStyle).not.toContain("#ABCDEF");
+    expect(storefrontStyle).toContain("--color-accent:#ABCDEF");
+    expect(storefrontStyle).toContain("--auto-focus:#ABCDEF");
     expect(html).toMatch(/<\/footer><\/div><button[^>]*bg-brand-primary[^>]*>Admin<\/button><\/body>/);
   });
 

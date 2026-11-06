@@ -12,7 +12,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   await connection();
   const [dealer, content] = await Promise.all([getDealerPresentation(), getPublicDealerContent()]);
   return (
-    <ThemeScope className="flex min-h-screen flex-col" overrides={{ "--color-primary": normalizeThemeColor(dealer.primaryColor) }}>
+    <ThemeScope className="flex min-h-screen flex-col" overrides={{ "--color-primary": normalizeThemeColor(dealer.primaryColor), "--color-accent": normalizeThemeColor(dealer.secondaryColor) }}>
       <SiteHeader dealer={dealer} />
       <main className="flex-1">{children}</main>
       <SiteFooter dealer={dealer} hours={content.profile?.operatingHoursActive ? content.profile.operatingHours : undefined} />

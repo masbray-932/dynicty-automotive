@@ -15,7 +15,7 @@ export type DealerAdministrator = {
 export type AdministratorIdentity = PlatformAdministrator | DealerAdministrator;
 
 export type AuthorizationRequest = {
-  readonly permission: "dealer:operate" | "platform:dealer-branding:write";
+  readonly permission: "dealer:operate" | "dealer:standalone-branding:write" | "platform:dealer-branding:write";
   readonly scope: DealerScope;
 };
 
@@ -40,6 +40,12 @@ export function allowsPermission(identity: unknown, request: unknown): boolean {
   switch (request.permission) {
     case "platform:dealer-branding:write":
       return identity.role === "platform-admin";
+    case "dealer:standalone-branding:write":
+      if (request.scope.kind !== LEGACY_DEALER_SCOPE.kind) return false;
+      // The legacy operator may manage only its standalone presentation.
+      // This does not grant platform branding permissions.
+      return identity.role === "dealer-admin" && "scope" in identity && isDealerScope(identity.scope) &&
+        identity.scope.kind === LEGACY_DEALER_SCOPE.kind;
     case "dealer:operate":
       return identity.role === "dealer-admin" && "scope" in identity && isDealerScope(identity.scope) &&
         identity.scope.kind === request.scope.kind && identity.scope.dealerId === request.scope.dealerId;
