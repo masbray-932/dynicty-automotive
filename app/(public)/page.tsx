@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import { QuickSearch } from "@/features/homepage/quick-search";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { getDealerPresentation, getHomepageData } from "@/server/homepage/service";
+import { legacyStorefrontContext } from "@/server/storefront/context";
 import { getPublicDealerContent } from "@/server/content/service";
 import { BannerCarousel } from "@/features/content/banner-carousel";
 import { visibleItems } from "@/features/content/domain";
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 export default async function HomePage() {
   await connection();
-  const [{featuredCars,latestCars,brands,dealer},content]=await Promise.all([getHomepageData(),getPublicDealerContent()]);
+  const [{featuredCars,latestCars,brands,dealer},content]=await Promise.all([getHomepageData(legacyStorefrontContext),getPublicDealerContent()]);
   const cars=[...featuredCars,...latestCars].slice(0,6);
   const main=visibleItems(content.items,"MAIN_BANNER"); const promos=visibleItems(content.items,"PROMO_BANNER");
   const profile=content.profile;

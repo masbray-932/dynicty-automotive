@@ -6,6 +6,7 @@ import { ActiveFilters, CatalogFilterForm, CatalogPagination, SortControl } from
 import { buildCatalogUrl, isCatalogIndexable, parseCatalogFilters, type RawCatalogSearchParams } from "@/features/catalog/domain";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { getCatalogData } from "@/server/catalog/service";
+import { legacyStorefrontContext } from "@/server/storefront/context";
 
 type PageProps = { searchParams: Promise<RawCatalogSearchParams> };
 
@@ -24,7 +25,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function CarsPage({ searchParams }: PageProps) {
   await connection();
   const parsed = parseCatalogFilters(await searchParams);
-  const data = await getCatalogData(parsed);
+  const data = await getCatalogData(legacyStorefrontContext, parsed);
   const title = parsed.filters.condition === "NEW" ? "Mobil Baru" : parsed.filters.condition === "USED" ? "Mobil Bekas" : "Daftar Mobil";
 
   return (

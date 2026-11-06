@@ -10,8 +10,9 @@ import {
 } from "@/features/catalog/domain";
 import { buildCatalogWhere } from "@/features/catalog/query";
 import type { HomepageCar } from "@/server/homepage/service";
-import { getStorageProvider } from "@/services/storage";
-import { logger } from "@/server/log";
+import type { InventoryContext } from "@/server/inventory/context";
+import { legacyStorefrontInventory } from "@/server/storefront/inventory";
+import { legacyVehicleImageUrl } from "@/server/storefront/media";
 
 export type CatalogBrandOption = {
   name: string;
@@ -30,23 +31,23 @@ export type CatalogData = {
   databaseUnavailable: boolean;
 };
 
-async function getOptions() {
+async function getOptions(scope: ReturnType<typeof legacyStorefrontInventory>) {
   const [brands, transmissionRows] = await Promise.all([
     db.brand.findMany({
-      where: { cars: { some: { status: "AVAILABLE" } } },
+      where: scope.brand,
       orderBy: { name: "asc" },
       select: {
         name: true,
         slug: true,
         models: {
-          where: { cars: { some: { status: "AVAILABLE" } } },
+          where: scope.model,
           orderBy: { name: "asc" },
           select: { name: true, slug: true },
         },
       },
     }),
     db.car.findMany({
-      where: { status: "AVAILABLE" },
+      where: scope.car,
       distinct: ["transmission"],
       orderBy: { transmission: "asc" },
       select: { transmission: true },
@@ -55,23 +56,14 @@ async function getOptions() {
   return { brands, transmissions: transmissionRows.map((row) => row.transmission) };
 }
 
-function imageUrl(storageKey: string | undefined) {
-  if (!storageKey) return null;
+export async function getCatalogData(context: InventoryContext, parsed: ParsedCatalogFilters): Promise<CatalogData> {
+  const scope = legacyStorefrontInventory(context);
   try {
-    return getStorageProvider().publicUrl(storageKey);
-  } catch {
-    logger.error("public.catalog_query_failed");
-    return null;
-  }
-}
-
-export async function getCatalogData(parsed: ParsedCatalogFilters): Promise<CatalogData> {
-  try {
-    const options = await getOptions();
+    const options = await getOptions(scope);
     const invalidCombination = validateCatalogCombination(parsed.filters, options.brands, options.transmissions);
     if (invalidCombination) return { cars: [], total: 0, totalPages: 0, outOfRange: false, ...options, invalidCombination, databaseUnavailable: false };
 
-    const where = buildCatalogWhere(parsed.filters);
+    const where = { AND: [scope.car, buildCatalogWhere(parsed.filters)] };
     const total = await db.car.count({ where });
     const pagination = paginationState(total, parsed.filters.page);
     if (pagination.outOfRange) return { cars: [], total, totalPages: pagination.totalPages, outOfRange: true, ...options, invalidCombination: null, databaseUnavailable: false };
@@ -93,6 +85,7 @@ export async function getCatalogData(parsed: ParsedCatalogFilters): Promise<Cata
         brand: { select: { name: true } },
         model: { select: { name: true } },
         images: {
+          where: scope.image,
           orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
           take: 1,
           select: { storageKey: true },
@@ -110,7 +103,7 @@ export async function getCatalogData(parsed: ParsedCatalogFilters): Promise<Cata
       price: car.price.toString(),
       transmission: car.transmission,
       mileage: car.mileage,
-      imageUrl: imageUrl(car.images[0]?.storageKey),
+      imageUrl: legacyVehicleImageUrl(car.id, car.images[0]?.storageKey),
     }));
     return { cars, total, totalPages: pagination.totalPages, outOfRange: false, ...options, invalidCombination: null, databaseUnavailable: false };
   } catch {

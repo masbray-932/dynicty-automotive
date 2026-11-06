@@ -11,12 +11,13 @@ import { shouldShowMileage } from "@/features/homepage/domain";
 import { formatMileage, formatRupiah } from "@/lib/format";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import { getCarDetailPageData } from "@/server/car-detail/service";
+import { legacyStorefrontContext } from "@/server/storefront/context";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getCarDetailPageData(slug);
+  const result = await getCarDetailPageData(legacyStorefrontContext, slug);
   if (result.kind !== "success") return { title: "Mobil Tidak Ditemukan", robots: { index: false, follow: false } };
   const description = buildVehicleSeoDescription({ title: result.car.title, transmission: result.car.transmission, dealerName: result.dealer.dealerName });
   return {
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function CarDetailPage({ params }: PageProps) {
   await connection();
   const { slug } = await params;
-  const result = await getCarDetailPageData(slug);
+  const result = await getCarDetailPageData(legacyStorefrontContext, slug);
   if (result.kind === "not-found") notFound();
   if (result.kind === "error") return <PageContainer className="py-20"><div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8 text-center"><h1 className="text-2xl font-bold text-white">Detail mobil belum dapat dimuat</h1><p className="mt-3 text-zinc-300">Silakan coba kembali beberapa saat lagi.</p><Link className="mt-6 inline-flex rounded-xl bg-red-600 px-5 py-3 font-bold text-white" href="/cars">Kembali ke katalog</Link></div></PageContainer>;
 
