@@ -135,13 +135,15 @@ describe("dealer branding write protection", () => {
     expect(settingsService).not.toHaveProperty("removeDealerLogo");
   });
 
-  it("renders the logo as a read-only preview with only operational inputs", async () => {
+  it("renders dedicated standalone branding controls alongside operational inputs", async () => {
     mocks.find.mockResolvedValue({ ...operational, ...branding });
     const html = renderToStaticMarkup(await AdminSettingsPage());
-    expect(html).toContain("Warna dan logo dealer dikelola oleh platform.");
+    expect(html).toContain("Atur logo dan warna website publik.");
     expect(html).toContain(logoUrl);
     expect(html).toContain("Simpan Pengaturan");
     for (const key of Object.keys(operational)) expect(html).toContain(`name="${key}"`);
-    expect(html).not.toMatch(/name="(primaryColor|secondaryColor|logoStorageKey|logo)"|type="(file|color)"|Hapus Logo|Ganti Logo/);
+    for (const key of ["primaryColor", "secondaryColor", "logo"]) expect(html).toContain(`name="${key}"`);
+    expect(html).toContain("Hapus Logo");
+    expect(html).not.toContain('name="logoStorageKey"');
   });
 });

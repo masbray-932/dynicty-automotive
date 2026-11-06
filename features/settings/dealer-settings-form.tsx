@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { ConfirmationForm } from "@/components/admin/confirmation-form";
-import { settingsConfirmation } from "@/features/admin/confirmation-policy";
+import { criticalAction, settingsConfirmation } from "@/features/admin/confirmation-policy";
 import { ActionNotification } from "@/components/ui/action-notification";
 import { useFeedbackAction } from "@/features/forms/use-feedback-action";
 import { shouldBypassImageOptimization } from "@/lib/image-delivery";
@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import type { ActionState } from "@/types/action-state";
 import type { DealerSettingsValues } from "@/validation/dealer-settings";
-import { saveDealerSettingsAction } from "@/server/settings/actions";
+import { removeStandaloneLogoAction, replaceStandaloneLogoAction, saveDealerSettingsAction, saveStandaloneColorsAction } from "@/server/settings/actions";
+import { normalizeThemeColor } from "@/features/theme/domain";
 
 type Values = Record<keyof DealerSettingsValues, string | null>;
 const inputClass = "min-h-11 w-full rounded-xl border border-white/15 bg-zinc-950 px-4 text-white outline-none focus:border-brand-focus";
 
-export function DealerSettingsForm({ values, logoUrl }: { values: Values; logoUrl: string | null }) {
+type BrandingValues = { primaryColor: string | null; secondaryColor: string | null };
+export function DealerSettingsForm({ values, logoUrl, branding }: { values: Values; logoUrl: string | null; branding: BrandingValues }) {
   const [notice, setNotice] = useState<ActionState | null>(null);
   const [draft, setDraft] = useState<Values>(() => ({ ...values, dealerName: values.dealerName ?? "Dynicty Automotive" }));
   const control = (name: keyof Values) => ({
@@ -30,14 +32,7 @@ export function DealerSettingsForm({ values, logoUrl }: { values: Values; logoUr
   return (
     <div className="grid gap-6">
       <ActionNotification key={notice?.resultId} state={notice} />
-      <SettingsSection title="Branding Dealer">
-        <div className="flex flex-wrap items-center gap-4">
-          {logoUrl ? (
-            <Image alt="Logo dealer saat ini" className="h-28 w-28 rounded-xl border border-white/10 bg-white object-contain p-2" height={112} src={logoUrl} unoptimized={shouldBypassImageOptimization(logoUrl)} width={112} />
-          ) : <p className="text-sm text-zinc-400">Belum ada logo.</p>}
-          <p className="text-sm text-zinc-300">Warna dan logo dealer dikelola oleh platform.</p>
-        </div>
-      </SettingsSection>
+      <BrandingForms key={JSON.stringify(branding)} colors={branding} logoUrl={logoUrl} onResult={setNotice} />
 
       <ConfirmationForm confirmation={data => settingsConfirmation(values, data)} action={action} onSubmit={event => {
         const address = event.currentTarget.elements.namedItem("address") as HTMLTextAreaElement;
@@ -52,6 +47,40 @@ export function DealerSettingsForm({ values, logoUrl }: { values: Values; logoUr
       </ConfirmationForm>
     </div>
   );
+}
+
+function BrandingForms({ colors, logoUrl, onResult }: { colors: BrandingValues; logoUrl: string | null; onResult: (result: ActionState) => void }) {
+  const [draft, setDraft] = useState(() => ({
+    primaryColor: normalizeThemeColor(colors.primaryColor) ?? "",
+    secondaryColor: normalizeThemeColor(colors.secondaryColor) ?? "",
+  }));
+  const [colorState, colorAction, colorsPending] = useFeedbackAction(saveStandaloneColorsAction, onResult);
+  const [logoState, logoAction, logoPending] = useFeedbackAction(replaceStandaloneLogoAction, onResult);
+  const [, removeAction, removePending] = useFeedbackAction(removeStandaloneLogoAction, onResult);
+  const busy = colorsPending || logoPending || removePending;
+  return <SettingsSection title="Branding Dealer">
+    <p className="text-sm text-zinc-300">Atur logo dan warna website publik. Kosongkan warna untuk memakai pengaturan bawaan.</p>
+    <div className="flex flex-wrap items-center gap-4">
+      {logoUrl ? <Image alt="Logo dealer saat ini" className="h-28 w-28 rounded-xl border border-white/10 bg-white object-contain p-2" height={112} src={logoUrl} unoptimized={shouldBypassImageOptimization(logoUrl)} width={112} />
+        : <p className="text-sm text-zinc-400">Belum ada logo.</p>}
+      <ConfirmationForm action={logoAction} confirmation={() => criticalAction(logoUrl ? "Ganti logo dealer?" : "Tampilkan logo dealer?", "Logo ini akan digunakan di website publik.", "Simpan logo")} className="grid flex-1 gap-2">
+        <Field error={logoState.errors.logo} htmlFor="dealer-logo" label="File logo (JPEG, PNG, atau WebP)"><input accept="image/jpeg,image/png,image/webp" className={inputClass} id="dealer-logo" name="logo" required type="file" /></Field>
+        <Button className="w-fit" disabled={busy} type="submit">{logoUrl ? "Ganti Logo" : "Unggah Logo"}</Button>
+      </ConfirmationForm>
+      {logoUrl ? <ConfirmationForm action={removeAction} confirmation={() => criticalAction("Hapus logo dealer?", "Website akan menampilkan logo bawaan.", "Hapus logo", true)}>
+        <Button disabled={busy} type="submit" variant="danger">Hapus Logo</Button>
+      </ConfirmationForm> : null}
+    </div>
+    <ConfirmationForm action={colorAction} confirmation={() => criticalAction("Simpan warna dealer?", "Warna baru akan digunakan di website publik.", "Simpan warna")} className="grid gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {([["primaryColor", "Warna utama"], ["secondaryColor", "Warna sekunder (indikator fokus)"]] as const).map(([name, label]) =>
+          <Field error={colorState.errors[name]} htmlFor={name} key={name} label={label}>
+            <input className={inputClass} id={name} name={name} onChange={event => setDraft(previous => ({ ...previous, [name]: event.target.value }))} pattern="#[0-9a-fA-F]{6}" placeholder="#RRGGBB" value={draft[name]} />
+          </Field>)}
+      </div>
+      <Button className="w-fit" disabled={busy} type="submit">Simpan Warna</Button>
+    </ConfirmationForm>
+  </SettingsSection>;
 }
 
 function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) { return <section className="grid gap-4 rounded-2xl border border-white/10 bg-zinc-900 p-5 sm:p-6"><h2 className="text-xl font-bold text-white">{title}</h2>{children}</section>; }

@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/db/client";
-import { getStorageProvider } from "@/services/storage";
+import { legacyDealerLogoUrl } from "./logo-url";
 import { dealerSettingsSchema, isDealerSettingsField } from "@/validation/dealer-settings";
 import { requireAdmin } from "@/server/auth/session";
 import { LEGACY_DEALER_SCOPE } from "@/server/dealer/scope";
@@ -10,9 +10,7 @@ export async function getAdminDealerSettings() {
   try {
     const settings = await db.dealerSettings.findUnique({ where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] } });
     if (!settings) return { kind: "success" as const, settings: null, logoUrl: null };
-    let logoUrl: string | null = null;
-    if (settings.logoStorageKey) { try { logoUrl = getStorageProvider().publicUrl(settings.logoStorageKey); } catch { logoUrl = null; } }
-    return { kind: "success" as const, settings, logoUrl };
+    return { kind: "success" as const, settings, logoUrl: legacyDealerLogoUrl(settings.logoStorageKey) };
   } catch { return { kind: "error" as const }; }
 }
 

@@ -43,7 +43,7 @@ describe("form wiring regression (hook harness, not browser certification)", () 
     expect(elements(render(page)).find(x => x.props.name === "modelId")?.props.value).toBe("");
   });
   it("preserves settings draft, rejects client whitespace and renders exactly one notification", async () => {
-    const page = () => DealerSettingsForm({ values: { dealerName: "Dealer", address: "Old address", phone: null, whatsappNumber: null, email: null, googleMapsUrl: null, instagramUrl: null, facebookUrl: null }, logoUrl: null });
+    const page = () => DealerSettingsForm({ values: { dealerName: "Dealer", address: "Old address", phone: null, whatsappNumber: null, email: null, googleMapsUrl: null, instagramUrl: null, facebookUrl: null }, logoUrl: null, branding: { primaryColor: null, secondaryColor: null } });
     let tree = render(page);
     const validity = vi.fn();
     elements(tree).find(x => x.props.name === "address")!.props.onChange!({ target: { value: "   ", setCustomValidity: validity } });

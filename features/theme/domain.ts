@@ -55,6 +55,7 @@ export function readableForeground(background: string): "#000000" | "#FFFFFF" {
 
 export function resolveAutomotiveTheme(overrides: unknown = null) {
   const tokens: CanonicalTokens = { ...AUTOMOTIVE_TOKEN_DEFAULTS };
+  let hasCustomAccent = false;
 
   if (overrides !== null) {
     if (typeof overrides !== "object") throw new TypeError("Expected a theme override object.");
@@ -75,11 +76,13 @@ export function resolveAutomotiveTheme(overrides: unknown = null) {
         throw new TypeError("Expected a six-digit hex theme color.");
       }
       tokens[key as AutomotiveToken] = value.toUpperCase();
+      if (key === "--color-accent") hasCustomAccent = true;
     }
   }
 
   const background = tokens["--color-background"];
   const primary = tokens["--color-primary"];
+  const focus = hasCustomAccent ? tokens["--color-accent"] : primary;
   const text = tokens["--color-text-primary"];
   const foreground = contrastRatio(text, background) >= 4.5 ? text : readableForeground(background);
   const aliases = {
@@ -87,7 +90,7 @@ export function resolveAutomotiveTheme(overrides: unknown = null) {
     "--auto-foreground": foreground,
     "--auto-action-primary": primary,
     "--auto-action-foreground": readableForeground(primary),
-    "--auto-focus": contrastRatio(primary, background) >= 3 ? primary : foreground,
+    "--auto-focus": contrastRatio(focus, background) >= 3 ? focus : foreground,
   };
 
   return { tokens, aliases };

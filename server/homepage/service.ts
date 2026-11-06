@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { HOMEPAGE_CAR_LIMIT, dealerFallback, mergeDealerPresentation, selectFeaturedHomepageCars } from "@/features/homepage/domain";
-import { getStorageProvider } from "@/services/storage";
+import { legacyDealerLogoUrl } from "@/server/settings/logo-url";
 import { logger } from "@/server/log";
 import { getLegacyPublicDealerScope } from "@/server/dealer/scope";
 import type { InventoryContext } from "@/server/inventory/context";
@@ -86,15 +86,7 @@ export const getDealerPresentation = cache(async () => {
     const { dealerId } = getLegacyPublicDealerScope();
     const settings = await db.dealerSettings.findUnique({ where: { id: dealerId, AND: [{ dealerId: null }] } });
     if (!settings) return dealerFallback;
-    let logoUrl: string | null = null;
-    if (settings.logoStorageKey) {
-      try {
-        logoUrl = getStorageProvider().publicUrl(settings.logoStorageKey);
-      } catch {
-        logoUrl = null;
-      }
-    }
-    return mergeDealerPresentation(settings, logoUrl);
+    return mergeDealerPresentation(settings, legacyDealerLogoUrl(settings.logoStorageKey));
   } catch {
     logger.error("public.dealer_settings_read_failed");
     return dealerFallback;
