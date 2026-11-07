@@ -47,7 +47,8 @@ Browser nyata membuktikan URL berulang sekarang menampilkan “Kelola Mobil” t
 | Cookie | HttpOnly, Secure, SameSite=Lax | PASS |
 | Admin responsive | Dashboard, cars, settings, content pada tiga viewport | PASS |
 | CRUD/media/settings/CMS | Built HTTP + PostgreSQL disposable; auth, validation, file cleanup dan ownership checks | PASS |
-| Full visual operator workflow | CRUD/upload/editor lengkap belum dieksekusi melalui browser | NOT TESTED |
+| Desktop operator journey tambahan | 18 checkpoint Chromium + PostgreSQL: branding, profil/logo, CMS profile/FAQ, brand/model, vehicle validation/CRUD/images, logout | PASS untuk skenario yang dieksekusi |
+| Remaining browser coverage | Semua kombinasi CMS, raster decode via ingress, interaksi CRUD mobile/tablet dan cross-browser belum lengkap | NOT TESTED / BLOCKED sesuai matrix |
 | Registered storefront | Tetap tidak aktif; tidak ada host/client input yang mengaktifkannya | PASS |
 
 ## 5. Security findings
@@ -118,4 +119,18 @@ Dokumentasi Next 16.3.5 yang terpasang juga menjelaskan perbedaan 200 untuk stre
 | Customer infrastructure readiness | **BLOCKED** |
 | Commercial release readiness | **BLOCKED** |
 
-Alasannya tegas: regression, build, disposable PostgreSQL, security boundaries dan browser smoke lulus, tetapi transport 404 belum benar, full browser operator UAT belum selesai, serta customer hostname/systemd/public TLS/ingress/restore belum dapat diverifikasi. Tidak ada deployment atau commercial approval yang dilakukan.
+Alasannya tegas: regression, build, disposable PostgreSQL, security boundaries dan browser smoke lulus, tetapi transport 404 belum benar, desktop operator journey 18 checkpoint lulus tetapi coverage UI/media lengkap belum selesai, serta customer hostname/systemd/public TLS/ingress/restore belum dapat diverifikasi. Tidak ada deployment atau commercial approval yang dilakukan.
+
+## 11. Follow-up verifikasi browser PR #16
+
+| Item | Hasil |
+|---|---|
+| PR/source | `28ff64a9ad07e4b308c8d3c36274ae47ff66dac3`, tree `529d648696c22f362a34a1389497ccda68cfd2fb`; source lokal identik |
+| Pengujian baru | 18 checkpoint browser Admin, seluruhnya PASS; final process exit 0 |
+| Defect baru | Tidak ada defect aplikasi baru yang dibuktikan dalam journey ini. Ketidakcocokan locator/teks dan penantian transient notification dalam iterasi harness tidak dilaporkan sebagai application FAIL; hasil final memakai kontrol aktual dan observasi reload/public propagation |
+| Revalidasi source | Tidak ada perubahan aplikasi, test, schema, migrasi, atau dependency pada follow-up ini. Build dan 424-test evidence sebelumnya tetap berlaku untuk tree aplikasi yang sama; tidak diklaim dieksekusi ulang pada follow-up |
+| Perubahan follow-up | Hanya tiga laporan S5 diperbarui dengan evidence dan sisa coverage |
+| Evidence detail | Appendix pada `AUTOMOTIVE_STANDALONE_S5_QA_MATRIX.md` |
+| Release impact | Application tetap PASS WITH LIMITATIONS; customer dan commercial tetap BLOCKED |
+
+Pengujian berjalan pada PostgreSQL baru dan data sintetis. Tidak ada database live, deployment, DNS, certificate, atau infrastruktur production/staging yang disentuh.

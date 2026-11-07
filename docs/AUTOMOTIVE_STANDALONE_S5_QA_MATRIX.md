@@ -36,7 +36,8 @@ Status berarti: **PASS** telah dieksekusi dengan bukti yang disebutkan; **FAIL**
 | APP-024 | Media | Upload, primary, reorder, delete | Built HTTP + PostgreSQL + filesystem disposable | Validasi dan cleanup aman | Content/size/path traversal/namespace, cover, reorder, delete dan cleanup DB failure PASS | PASS | Critical | — |
 | APP-025 | Settings | Profil, warna, logo | Built HTTP + PostgreSQL disposable | Validasi, persistence, cleanup | Nilai valid tersimpan; CSS/URL/SVG tidak aman ditolak; logo diganti/dihapus dan file lama dibersihkan | PASS | Critical | — |
 | APP-026 | CMS | Banner/profile/FAQ/advantage/leasing | Built HTTP + PostgreSQL disposable | CRUD/publish dan inactive hiding | Jenis konten tersebut diverifikasi termasuk penyembunyian inactive | PASS | High | — |
-| APP-027 | UI CRUD | CRUD, branding, CMS melalui kontrol browser | Browser nyata | Seluruh interaksi visual selesai | Login dan navigasi diuji; rangkaian CRUD/upload/editor penuh tidak dijalankan di browser | NOT TESTED | High | Wajib pada host kandidat sebelum handoff |
+| APP-027 | UI CRUD | Alur Admin terpilih melalui browser | Chromium 156 / PostgreSQL 17.11 disposable, 1280 px | Mutasi melalui kontrol UI dan hasil persisten | 18 checkpoint PASS: branding/cancel/focus, profil/logo, CMS profile/FAQ, brand/model, vehicle validation/create/price/images/delete/logout; lihat appendix evidence | PASS | High | Ulangi melalui ingress kandidat; coverage bukan seluruh kombinasi CMS/media |
+| APP-028 | Media bytes | Gambar baru ter-decode melalui proxy pelanggan | Customer-like ingress | URL baru menampilkan bytes valid tanpa restart | Upload metadata/UI diuji; decode bytes lewat Nginx pelanggan tidak diuji dalam journey ini | BLOCKED | High | Verifikasi upload baru, gallery, logo, raster MIME dan file deletion melalui hostname kandidat |
 | SEC-001 | Authorization | Admin tanpa session | Built HTTP | Redirect/tolak sebelum data query | Guard halaman/action dan non-leakage regresi PASS | PASS | Critical | — |
 | SEC-002 | Ownership | Legacy vs registered inventory | PostgreSQL disposable | Tidak ada cross-dealer read/write | Fixture legacy/owned/mixed dan empat FK cross-owner negatif ditolak | PASS | Critical | — |
 | SEC-003 | Origin/host | Server Action origin | Built HTTP | Origin asing ditolak | Origin negatif dan CSRF action terverifikasi | PASS | Critical | — |
@@ -67,15 +68,48 @@ Status berarti: **PASS** telah dieksekusi dengan bukti yang disebutkan; **FAIL**
 
 | Test ID | Komponen | Skenario | Lingkungan | Hasil aktual | Status | Severity | Remediasi |
 |---|---|---|---|---|---|---|---|
-| COM-001 | Application | Regression/build/security inti | Local disposable | Lulus dengan satu defect transport status dan browser CRUD belum lengkap | PASS | High | Catat sebagai **PASS WITH LIMITATIONS** |
+| COM-001 | Application | Regression/build/security inti | Local disposable | Lulus dengan satu defect transport status; 18 checkpoint Admin browser tambahan lulus | PASS | High | Catat sebagai **PASS WITH LIMITATIONS** |
 | COM-002 | Customer host | Domain, TLS, systemd, ingress, backup/restore | Tidak tersedia | Tidak ada bukti host pelanggan | BLOCKED | Critical | Jalankan S4 checklist pada kandidat |
-| COM-003 | Browser acceptance | Full operator onboarding/CRUD/media/CMS | Browser lokal tersedia | Responsive/login PASS; workflow operator lengkap belum diuji browser | NOT TESTED | Critical | UAT penuh sebelum customer handoff |
+| COM-003 | Browser acceptance | Full operator onboarding/CRUD/media/CMS | Browser lokal tersedia | Responsive/login dan 18 checkpoint desktop Admin PASS; seluruh jenis CMS, format/ukuran media, dan workflow mobile interaktif belum lengkap | NOT TESTED | Critical | UAT penuh sebelum customer handoff |
 | COM-004 | Certification | Commercial release approval | Gabungan | Acceptance customer-host belum ada | BLOCKED | Critical | Dilarang menyebut production ready |
 
 ## Ringkasan gate
 
 | Gate | Verdict | Dasar |
 |---|---|---|
-| Application readiness | **PASS WITH LIMITATIONS** | Build/regression/security/DB/browser smoke lulus; HTTP 200 streaming not-found dan full browser CRUD tersisa |
+| Application readiness | **PASS WITH LIMITATIONS** | Build/regression/security/DB/browser smoke lulus; HTTP 200 streaming not-found, coverage UI/media lengkap dan ingress pelanggan tersisa |
 | Customer infrastructure readiness | **BLOCKED** | Tidak ada customer host untuk systemd, DNS, public TLS dan end-to-end ingress |
 | Commercial release readiness | **BLOCKED** | Customer-host validation diwajibkan oleh Stage S5 |
+
+## Appendix — lanjutan browser Admin pada PR #16
+
+| Item | Evidence |
+|---|---|
+| Source yang diuji | PR HEAD `28ff64a9ad07e4b308c8d3c36274ae47ff66dac3`; tree `529d648696c22f362a34a1389497ccda68cfd2fb` sama dengan tree lokal yang dibuild |
+| Runtime | Production build S5, Chromium Headless Shell 156.0.8078.47, Playwright 1.57.0, 1280×900, loopback `127.0.0.1:3109` |
+| Database | PostgreSQL 17.11 cluster baru; enam migrasi; staging seed sintetis, bukan staging eksternal |
+| Environment limitation | Sandbox membatasi Unix sockets/network-interface enumeration. Seed memakai `node --import tsx`; test-only `networkInterfaces` shim di luar repository hanya menyediakan loopback agar Next start. Tidak ada auth/origin/storage guard yang diubah |
+| Eksekusi | Final journey exit 0, 18 checkpoint PASS, 0 uncaught browser page errors |
+| Media limitation | Upload, cover, ordering dan delete action/UI diverifikasi. Tes ini tidak menyatakan decode bytes melalui customer ingress sudah lulus |
+| Scope | Desktop operator journey; matriks responsive sebelumnya tetap terpisah. Bukan full WCAG/cross-browser/customer acceptance |
+
+| Checkpoint | Observasi aktual | Status |
+|---|---|---|
+| Login | Session valid menuju Dashboard | PASS |
+| Branding batal | Escape menutup dialog, fokus kembali ke tombol, reload mempertahankan warna awal | PASS |
+| Branding simpan | Reload mempertahankan `#2563EB`; computed storefront `--color-primary` sama | PASS |
+| Profil dealer | Nama berubah melalui dialog; storefront menampilkan nama baru | PASS |
+| Logo | Upload PNG, replacement, confirmed removal; UI kembali “Belum ada logo.” | PASS |
+| CMS profile | Welcome diaktifkan; heading baru muncul di homepage | PASS |
+| FAQ publish | Pertanyaan/jawaban aktif tersimpan dan terlihat publik | PASS |
+| FAQ delete | Confirmed delete menghilangkan FAQ dari homepage | PASS |
+| Rename brand batal | Dialog old/new tampil; reload mempertahankan nama lama setelah Batal | PASS |
+| Brand/model | Rename confirmed lalu pembuatan model tersimpan dan muncul sebagai pilihan mobil | PASS |
+| Validation recovery | Harga invalid ditolak server; varian/harga tetap terisi; `aria-invalid=true` | PASS |
+| Create/publish vehicle | Confirm Publikasikan menuju edit page kendaraan baru | PASS |
+| Critical price | Confirm update; reload mempertahankan harga 210000000 | PASS |
+| Image workflow | Dua PNG terunggah; cover berpindah ke ID gambar kedua; reorder membuat ID tersebut di posisi pertama | PASS |
+| Image delete | Confirm delete mengurangi daftar dari dua menjadi satu | PASS |
+| Vehicle delete | Batal mempertahankan row; confirm menghapus row dari daftar | PASS |
+| Logout | Tanpa dialog; protected `/admin` kembali ke login | PASS |
+| Browser runtime | Tidak ada uncaught page error selama final journey | PASS |
