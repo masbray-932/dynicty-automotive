@@ -1,4 +1,4 @@
-export const CONTENT_KINDS = ["MAIN_BANNER", "PROMO_BANNER", "ADVANTAGE", "FAQ", "LEASING_PARTNER"] as const;
+export const CONTENT_KINDS = ["MAIN_BANNER", "PROMO_BANNER", "ADVANTAGE", "FAQ", "LEASING_PARTNER", "TESTIMONIAL"] as const;
 export type ContentKind = typeof CONTENT_KINDS[number];
 export const MAX_MAIN_SLIDES = 5;
 export const AUTOPLAY_MS = 5000;
@@ -23,7 +23,7 @@ export type PublicContentItem = {
 export function visibleItems(items: PublicContentItem[], kind: ContentKind) {
   return items.filter(item => item.kind === kind && item.active && item.title.trim() &&
     (!isMediaKind(kind) || item.mediaUrl) &&
-    ((kind !== "FAQ" && kind !== "ADVANTAGE") || item.body.trim()) && safeContentLink(item.link))
+    ((kind !== "FAQ" && kind !== "ADVANTAGE" && kind !== "TESTIMONIAL") || item.body.trim()) && safeContentLink(item.link))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id))
     .slice(0, kind === "MAIN_BANNER" ? MAX_MAIN_SLIDES : 30);
 }

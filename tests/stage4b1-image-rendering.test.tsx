@@ -28,7 +28,7 @@ describe("public persistent media rendering", () => {
     expect(html).toContain('data-direct="true"');
   });
   it("covers showroom and leasing logos", () => {
-    const content = { profile: { dealerId: "default", welcomeTitle: "", welcomeBody: "", welcomeActive: false, aboutSummary: "Story", aboutStory: "Story", aboutActive: true, showroomKey: "showroom", showroomAlt: "Showroom", operatingHours: "", operatingHoursActive: false, updatedAt: new Date() }, showroomUrl: "/uploads/showroom.jpg", items: [{ id: "p", kind: "LEASING_PARTNER" as const, title: "Partner", body: "", link: "", active: true, sortOrder: 0, mediaUrl: "/uploads/partner.png" }] };
+    const content = { profile: { history: "", vision: "", mission: "", achievements: "", dealerId: "default", welcomeTitle: "", welcomeBody: "", welcomeActive: false, aboutSummary: "Story", aboutStory: "Story", aboutActive: true, showroomKey: "showroom", showroomAlt: "Showroom", operatingHours: "", operatingHoursActive: false, updatedAt: new Date() }, showroomUrl: "/uploads/showroom.jpg", items: [{ id: "p", kind: "LEASING_PARTNER" as const, title: "Partner", body: "", link: "", active: true, sortOrder: 0, mediaUrl: "/uploads/partner.png" }] };
     const html = renderToStaticMarkup(<><AboutSection content={content} /><LeasingSection content={content} /></>);
     expect(html.match(/data-direct="true"/g)).toHaveLength(2);
   });

@@ -71,3 +71,16 @@ describe("CMS authenticated mutation boundaries (mocked services, not DB integra
     expect(result.status).toBe("error");expect(mocks.remove).toHaveBeenCalled();expect(mocks.refresh).not.toHaveBeenCalled();
   });
 });
+
+ describe("structured profile compatibility",()=>{
+ it("keeps structured fields when an older form omits them",async()=>{
+ mocks.profileFind.mockResolvedValue({history:"Existing history",vision:"Existing vision",mission:"Existing mission",achievements:"Existing facts",showroomKey:null});
+ await saveDealerContentAction(empty,new FormData());
+ expect(mocks.profileUpsert).toHaveBeenCalledWith(expect.objectContaining({update:expect.objectContaining({history:"Existing history",vision:"Existing vision",mission:"Existing mission",achievements:"Existing facts"})}));
+ });
+ it("allows an explicit empty structured field without losing other values",async()=>{
+ mocks.profileFind.mockResolvedValue({history:"Old",vision:"Keep",mission:"Keep",achievements:"",showroomKey:null});
+ const data=new FormData();data.set("history", "");await saveDealerContentAction(empty,data);
+ expect(mocks.profileUpsert).toHaveBeenCalledWith(expect.objectContaining({update:expect.objectContaining({history:"",vision:"Keep"})}));
+ });
+ });

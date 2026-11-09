@@ -48,9 +48,9 @@ async function lockOwner(tx: Prisma.TransactionClient, dealerId: typeof LEGACY_D
 export async function saveDealerContentAction(_state: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();
   const { dealerId } = LEGACY_DEALER_SCOPE;
-  const fields = ["welcomeTitle","welcomeBody","aboutSummary","aboutStory","showroomAlt","operatingHours"];
+  const fields = ["welcomeTitle","welcomeBody","aboutSummary","aboutStory","showroomAlt","operatingHours","history","vision","mission","achievements"];
   const parsed = dealerContentSchema.safeParse({...Object.fromEntries(fields.map(key=>[key,form.get(key) ?? ""])),welcomeActive:form.get("welcomeActive")==="on",aboutActive:form.get("aboutActive")==="on",operatingHoursActive:form.get("operatingHoursActive")==="on"});
-  if (!parsed.success) return {message:"Periksa konten dealer.",errors:parsed.error.flatten().fieldErrors};
+  if (!parsed.success) return actionResult("error","Periksa konten dealer.",parsed.error.flatten().fieldErrors);
   let uploaded: string | null = null;
   let committed = false;
   try {
@@ -60,14 +60,15 @@ export async function saveDealerContentAction(_state: ActionState, form: FormDat
       const existing = await tx.dealerContent.findUnique({where:{dealerId}});
       const showroomKey = uploaded ?? (form.get("removeImage")==="on" ? null : existing?.showroomKey ?? null);
       if (showroomKey && !parsed.data.showroomAlt) throw new ContentError("Isi deskripsi foto showroom.");
-      await tx.dealerContent.upsert({where:{dealerId},create:{dealerId,...parsed.data,showroomKey},update:{...parsed.data,showroomKey}});
+      const structured=Object.fromEntries((["history","vision","mission","achievements"] as const).map(field=>[field,form.has(field)?parsed.data[field]:existing?.[field]??""]));
+      await tx.dealerContent.upsert({where:{dealerId},create:{dealerId,...parsed.data,...structured,showroomKey},update:{...parsed.data,...structured,showroomKey}});
       return existing?.showroomKey !== showroomKey ? existing?.showroomKey ?? null : null;
     });
     committed = true;
     const orphan = await cleanup(oldKey); refresh(true);
-    return {message:orphan ? "Konten disimpan; file lama perlu dibersihkan manual." : "Konten dealer berhasil disimpan.",errors:{}};
+    return actionResult(orphan?"warning":"success",orphan ? "Konten disimpan; file lama perlu dibersihkan manual." : "Konten dealer berhasil disimpan.");
   } catch(error) {
-    if (committed) { logger.error("content.revalidation_failed"); return {message:"Konten disimpan. Muat ulang halaman untuk melihat perubahan.",errors:{}}; }
+    if (committed) { logger.error("content.revalidation_failed"); return actionResult("warning","Konten disimpan. Muat ulang halaman untuk melihat perubahan."); }
     await cleanup(uploaded); return failed(error);
   }
 }
@@ -75,7 +76,7 @@ export async function saveContentItemAction(_state: ActionState, form: FormData)
   await requireAdmin();
   const { dealerId } = LEGACY_DEALER_SCOPE;
   const parsed = contentItemSchema.safeParse({...Object.fromEntries(["kind","title","body","link","sortOrder"].map(key=>[key,form.get(key) ?? ""])),id:form.get("id") || undefined,active:form.get("active")==="on"});
-  if (!parsed.success) return {message:"Periksa data bagian ini.",errors:parsed.error.flatten().fieldErrors};
+  if (!parsed.success) return actionResult("error","Periksa data bagian ini.",parsed.error.flatten().fieldErrors);
   let uploaded: string | null = null;
   let committed = false;
   try {
@@ -98,18 +99,18 @@ export async function saveContentItemAction(_state: ActionState, form: FormData)
     });
     committed = true;
     const orphan = await cleanup(oldKey); refresh();
-    return {message:orphan ? "Konten disimpan; file lama perlu dibersihkan manual." : "Konten berhasil disimpan.",errors:{}};
+    return actionResult(orphan?"warning":"success",orphan ? "Konten disimpan; file lama perlu dibersihkan manual." : "Konten berhasil disimpan.");
   } catch(error) {
-    if (committed) { logger.error("content.revalidation_failed"); return {message:"Konten disimpan. Muat ulang halaman untuk melihat perubahan.",errors:{}}; }
+    if (committed) { logger.error("content.revalidation_failed"); return actionResult("warning","Konten disimpan. Muat ulang halaman untuk melihat perubahan."); }
     await cleanup(uploaded); return failed(error);
   }
 }
 export async function deleteContentItemAction(_state: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();
   const { dealerId } = LEGACY_DEALER_SCOPE;
-  if (form.get("confirm") !== "on") return {message:"Centang konfirmasi hapus.",errors:{}};
+  if (form.get("confirm") !== "on") return actionResult("error","Centang konfirmasi hapus.");
   const id = form.get("id");
-  if (typeof id !== "string" || !id || id.length > 40) return {message:"Konten tidak ditemukan.",errors:{}};
+  if (typeof id !== "string" || !id || id.length > 40) return actionResult("error","Konten tidak ditemukan.");
   try {
     const key = await db.$transaction(async tx => {
       await lockOwner(tx, dealerId);
@@ -117,6 +118,6 @@ export async function deleteContentItemAction(_state: ActionState, form: FormDat
       if (!item) throw new ContentError("Konten tidak ditemukan.");
       await tx.dealerContentItem.delete({where:{id:item.id}}); return item.mediaKey;
     });
-    const orphan = await cleanup(key); refresh(); return {message:orphan ? "Konten dihapus; file perlu dibersihkan manual." : "Konten dihapus.",errors:{}};
+    const orphan = await cleanup(key); refresh(); return actionResult(orphan?"warning":"success",orphan ? "Konten dihapus; file perlu dibersihkan manual." : "Konten dihapus.");
   } catch(error) {return failed(error);}
 }

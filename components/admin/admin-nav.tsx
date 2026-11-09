@@ -5,6 +5,8 @@ const links = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/cars", label: "Kelola Mobil" },
   { href: "/admin/brands", label: "Merek & Model" },
+  { href: "/admin/services", label: "Layanan" },
+  { href: "/admin/articles", label: "Artikel" },
   { href: "/admin/content", label: "Konten Website" },
   { href: "/admin/settings", label: "Pengaturan" },
   { href: "/", label: "Lihat Website" },
