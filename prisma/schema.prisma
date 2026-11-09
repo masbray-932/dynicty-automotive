@@ -183,24 +183,27 @@ model DealerDomain {
 }
 
 model DealerSettings {
-  id             String              @id @default("default")
-  dealerName     String              @default("Dynicty Automotive")
-  logoStorageKey String?
-  whatsappNumber String?
-  phone          String?
-  email          String?
-  address        String?
-  googleMapsUrl  String?
-  instagramUrl   String?
-  facebookUrl    String?
-  primaryColor   String?
-  secondaryColor String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  dealerId       String?             @unique
-  dealer         Dealer?             @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  content        DealerContent?
-  contentItems   DealerContentItem[]
+  id                String              @id @default("default")
+  dealerName        String              @default("Dynicty Automotive")
+  logoStorageKey    String?
+  whatsappNumber    String?
+  phone             String?
+  email             String?
+  address           String?
+  googleMapsUrl     String?
+  instagramUrl      String?
+  facebookUrl       String?
+  primaryColor      String?
+  secondaryColor    String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  dealerId          String?             @unique
+  dealer            Dealer?             @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  content           DealerContent?
+  contentItems      DealerContentItem[]
+  serviceCategories ServiceCategory[]
+  showroomServices  ShowroomService[]
+  articles          Article[]
 }
 
 enum DealerContentKind {
@@ -209,6 +212,7 @@ enum DealerContentKind {
   ADVANTAGE
   FAQ
   LEASING_PARTNER
+  TESTIMONIAL
 }
 
 model DealerContent {
@@ -218,6 +222,10 @@ model DealerContent {
   welcomeActive        Boolean        @default(false)
   aboutSummary         String         @default("") @db.Text
   aboutStory           String         @default("") @db.Text
+  history              String         @default("") @db.Text
+  vision               String         @default("") @db.Text
+  mission              String         @default("") @db.Text
+  achievements         String         @default("") @db.Text
   aboutActive          Boolean        @default(false)
   showroomKey          String?
   showroomAlt          String         @default("")
@@ -242,4 +250,69 @@ model DealerContentItem {
   dealer    DealerSettings    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
 
   @@index([dealerId, kind, active, sortOrder])
+}
+
+enum ContentPublicationStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model ServiceCategory {
+  id               String            @id @default(cuid())
+  dealerSettingsId String
+  name             String
+  slug             String
+  description      String            @default("") @db.Text
+  sortOrder        Int               @default(0)
+  active           Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  dealerSettings   DealerSettings    @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  services         ShowroomService[]
+
+  @@unique([dealerSettingsId, id])
+  @@unique([dealerSettingsId, slug])
+  @@index([dealerSettingsId, active, sortOrder])
+}
+
+model ShowroomService {
+  id               String                   @id @default(cuid())
+  dealerSettingsId String
+  categoryId       String
+  title            String
+  slug             String
+  shortDescription String                   @default("") @db.Text
+  body             String                   @default("") @db.Text
+  imageStorageKey  String?
+  imageAlt         String                   @default("")
+  status           ContentPublicationStatus @default(DRAFT)
+  homepageVisible  Boolean                  @default(false)
+  sortOrder        Int                      @default(0)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  dealerSettings   DealerSettings           @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  category         ServiceCategory          @relation(fields: [dealerSettingsId, categoryId], references: [dealerSettingsId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([dealerSettingsId, slug])
+  @@index([dealerSettingsId, status, homepageVisible, sortOrder])
+  @@index([dealerSettingsId, categoryId])
+}
+
+model Article {
+  id               String                   @id @default(cuid())
+  dealerSettingsId String
+  title            String
+  slug             String
+  excerpt          String                   @default("") @db.Text
+  body             String                   @default("") @db.Text
+  imageStorageKey  String?
+  imageAlt         String                   @default("")
+  status           ContentPublicationStatus @default(DRAFT)
+  publishedAt      DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  dealerSettings   DealerSettings           @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([dealerSettingsId, slug])
+  @@index([dealerSettingsId, status, publishedAt])
 }

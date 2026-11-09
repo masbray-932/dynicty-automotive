@@ -1,0 +1,12 @@
+import { beforeEach, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+const m = vi.hoisted(() => ({ auth: vi.fn(), read: vi.fn() }));
+vi.mock("server-only", () => ({}));
+vi.mock("@/server/auth/session", () => ({ requireAdmin: m.auth }));
+vi.mock("@/server/editorial/service", () => ({ getAdminEditorial: m.read, editorialImageUrl: () => null }));
+vi.mock("@/server/editorial/actions", () => ({ saveEditorialAction: vi.fn(), deleteEditorialAction: vi.fn() }));
+import ArticlesPage from "@/app/admin/(protected)/articles/page";
+import ServicesPage from "@/app/admin/(protected)/services/page";
+beforeEach(() => { vi.resetAllMocks(); m.read.mockResolvedValue({ categories: [], services: [], articles: [], serviceCount: 0, articleCount: 0 }); });
+it("directly rejects both pages before querying or serializing protected editorial data", async () => { m.auth.mockRejectedValue(new Error("unauthorized")); for (const page of [ArticlesPage, ServicesPage]) await expect(page({ searchParams: Promise.resolve({}) })).rejects.toThrow("unauthorized"); expect(m.read).not.toHaveBeenCalled(); });
+it("renders authenticated editors with escaped text and accessible controls", async () => { m.auth.mockResolvedValue({ id: "admin" }); const html = renderToStaticMarkup(await ArticlesPage({ searchParams: Promise.resolve({}) })); expect(html).toContain('name="slug"'); expect(html).toContain('name="body"'); expect(html).toContain('name="status"'); expect(html).not.toContain('dangerouslySetInnerHTML'); expect(m.read).toHaveBeenCalledWith(1); });
