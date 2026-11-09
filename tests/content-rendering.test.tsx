@@ -15,8 +15,11 @@ describe("public content SSR regression",()=>{
     const single=renderToStaticMarkup(<BannerCarousel slides={[item]} />);expect(single).not.toContain("Banner sebelumnya");expect(single).not.toContain("Tampilkan banner");
     const multiple=renderToStaticMarkup(<BannerCarousel slides={[item,{...item,id:"two"}]} />);expect(multiple).toContain("Banner sebelumnya");expect(multiple).toContain("inert");expect(multiple).toContain("Jeda pergantian otomatis");
   });
-  it("uses public breakpoint classes and exact preview geometry with no text/button CTA overlay",()=>{
-    const html=renderToStaticMarkup(<BannerCarousel slides={[item]} previewWidth={1280} />);expect(html).toContain("aspect-[2/1]");expect(html).toContain("xl:aspect-[21/9]");expect(html).toContain("aspect-ratio:21 / 9");expect(html).not.toContain("<h2");expect(html).not.toContain("<button");
+  it("uses cinematic full-bleed geometry and never renders CMS banner links as promotional actions",()=>{
+    const html=renderToStaticMarkup(<BannerCarousel slides={[item]} previewWidth={1280} />);expect(html).toContain("h-[clamp(24rem,68vw,52rem)]");expect(html).toContain("aspect-ratio:21 / 9");expect(html).not.toContain('href="/cars"');expect(html).not.toContain("<button");
+  });
+  it("renders optional CMS welcome copy as a non-interactive banner overlay",()=>{
+    const html=renderToStaticMarkup(<BannerCarousel slides={[item]} headline="Selamat datang" description="Profil dealer" />);expect(html).toContain("Selamat datang");expect(html).toContain("Profil dealer");expect(html).toContain("pointer-events-none");expect(html).not.toContain('href="/cars"');
   });
   it("escapes dealer FAQ text instead of rendering user HTML",()=>{
     const html=renderToStaticMarkup(<FaqSection content={{profile:null,showroomUrl:null,items:[{...item,kind:"FAQ",link:"",body:"<script>alert(1)</script>"}]}} />);expect(html).toContain("&lt;script&gt;");expect(html).not.toContain("<script>");

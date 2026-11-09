@@ -30,3 +30,66 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+.public-storefront {
+  --public-red: #c8102e;
+  --public-red-hover: #a60d26;
+  --public-charcoal: #171717;
+  --public-muted: #606060;
+  --public-border: #e5e5e5;
+  --public-soft: #f6f6f6;
+  background: #ffffff;
+  color: var(--public-charcoal);
+  font-family: var(--font-public-sans), var(--font-geist-sans), Arial, sans-serif;
+}
+
+.public-storefront h1,
+.public-storefront h2,
+.public-storefront .font-public-display {
+  font-family: var(--font-public-display), var(--font-public-sans), sans-serif;
+}
+
+.public-storefront :focus-visible {
+  outline-color: var(--auto-focus);
+  outline-offset: 3px;
+}
+
+.public-section {
+  padding-block: clamp(3.5rem, 7vw, 6rem);
+}
+
+.public-eyebrow {
+  color: var(--public-red);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.public-card {
+  background: #ffffff;
+  border: 1px solid var(--public-border);
+  border-radius: 0.5rem;
+}
+
+.public-control {
+  min-height: 2.75rem;
+  border: 1px solid var(--public-border);
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: var(--public-charcoal);
+}
+
+.public-control:focus {
+  border-color: var(--public-charcoal);
+  outline: 1px solid var(--public-charcoal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .public-storefront *,
+  .public-storefront *::before,
+  .public-storefront *::after {
+    scroll-behavior: auto !important;
+  }
+}

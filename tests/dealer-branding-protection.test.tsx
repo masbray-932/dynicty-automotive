@@ -76,6 +76,8 @@ describe("dealer branding write protection", () => {
     });
     const html = renderToStaticMarkup(await PublicLayout({ children: <p>Storefront</p> }));
     expect(html).toContain("--color-primary:#123456");
+    expect(html).toContain("--color-background:#FFFFFF");
+    expect(html).toContain("public-storefront");
     expect(html).toContain(logoUrl);
   });
 
