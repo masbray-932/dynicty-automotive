@@ -77,3 +77,28 @@ describe("protected pages authenticate independently of parent layout", () => {
     }
   });
 });
+
+describe("admin vehicle filters", () => {
+  it("normalizes repeated and oversized query parameters before querying Prisma", async () => {
+    const oversized = `legacy-${"x".repeat(150)}`;
+    const html = renderToStaticMarkup(await Cars({
+      searchParams: Promise.resolve({
+        q: [oversized, "ignored"],
+        status: ["AVAILABLE", "SOLD"],
+      }),
+    }));
+
+    const expectedSearch = oversized.slice(0, 100);
+    expect(html).toContain(`value="${expectedSearch}"`);
+    expect(mocks.cars).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        dealerId: null,
+        status: "AVAILABLE",
+        OR: expect.arrayContaining([
+          { variant: { contains: expectedSearch, mode: "insensitive" } },
+        ]),
+      }),
+    }));
+    expect(JSON.stringify(mocks.cars.mock.calls[0])).not.toContain("ignored");
+  });
+});
