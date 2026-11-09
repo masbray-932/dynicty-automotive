@@ -8,12 +8,13 @@ vi.mock("next/image",()=>({default:({alt,src}: {alt:string;src:string})=><span r
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));
 vi.mock("@/server/content/service",()=>({getPublicDealerContent:async()=>data.content}));
 vi.mock("@/server/homepage/service",()=>({getDealerPresentation:async()=>data.dealer,getHomepageData:async()=>({dealer:data.dealer,brands:[],featuredCars:Array.from({length:3},(_,i)=>({id:`featured-${i}`,slug:`car-${i}`,condition:"NEW",brand:"Test",model:"Model",variant:"Variant",year:2026,price:"100000000",transmission:"Automatic",mileage:null,imageUrl:null})),latestCars:Array.from({length:6},(_,i)=>({id:`latest-${i}`,slug:`latest-${i}`,condition:"USED",brand:"Test",model:"Model",variant:"Variant",year:2025,price:"90000000",transmission:"Automatic",mileage:1000,imageUrl:null}))})}));
+vi.mock("@/server/editorial/public",()=>({getHomepageServices:async()=>[]}));
 import HomePage,{generateMetadata as homeMetadata} from "@/app/(public)/page";
 import AboutPage,{generateMetadata as aboutMetadata} from "@/app/(public)/about/page";
 describe("dealer content page wiring (mocked reads)",()=>{
   it("wires agreed Homepage sections and limits displayed inventory to six",async()=>{
     const html=renderToStaticMarkup(await HomePage());
-    for(const text of ["Banner utama","Selamat Datang","Pencarian mobil","Promo dealer","Mobil Tersedia","Tentang Kami","Kenapa Memilih Kami","Partner Leasing","Pertanyaan yang Sering Diajukan","Hubungi Dealer Test"])expect(html).toContain(text);
+    for(const text of ["Banner utama","Selamat Datang","Pencarian mobil","Promo Bulan Ini","Daftar Stok Mobil","Sekilas Tentang Kami","Kenapa Memilih Kami","Partner Leasing","Pertanyaan yang Sering Diajukan","Hubungi Dealer Test"])expect(html).toContain(text);
     expect(html).toContain('name="minPrice"');expect(html).toContain('name="maxPrice"');
     expect(html).toContain('/cars/latest-2');expect(html).not.toContain('/cars/latest-3');expect(html).toContain('href="https://wa.me/6281234567890"');
   });

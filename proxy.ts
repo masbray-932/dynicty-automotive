@@ -1,26 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { resolveLegacyVehiclePublication } from "@/server/storefront/vehicle-publication-gate";
 
+import { publicNotFoundResponse } from "@/server/storefront/not-found-response";
+import { resolveEditorialPublication } from "@/server/editorial/publication";
+
 export async function proxy(request: NextRequest) {
   if (request.method !== "GET" && request.method !== "HEAD") return NextResponse.next();
 
-  const slug = request.nextUrl.pathname.slice("/cars/".length);
-  const publication = await resolveLegacyVehiclePublication(slug);
+  const [, namespace, slug] = request.nextUrl.pathname.split("/");
+  const publication = namespace === "cars" ? await resolveLegacyVehiclePublication(slug) : await resolveEditorialPublication(namespace === "services" ? "service" : "article", slug);
   if (publication !== "not-found") return NextResponse.next();
 
-  const notFoundUrl = request.nextUrl.clone();
-  notFoundUrl.pathname = "/_not-found";
-  notFoundUrl.search = "";
-  // Next can reset an internal rewrite's status while streaming an RSC target.
-  // Return a plain negative transport response for Flight/HEAD requests. The
-  // router can fall back to the normal HTML URL, which renders our branded 404.
-  // Do not synthesize or depend on Next's private Flight wire format.
-  const response = request.method === "HEAD" || request.headers.get("rsc") === "1"
-    ? new NextResponse("", { status: 404 })
-    : NextResponse.rewrite(notFoundUrl, { status: 404 });
-  response.headers.set("Cache-Control", "private, no-store, max-age=0");
-  response.headers.set("X-Robots-Tag", "noindex, nofollow");
-  return response;
+  // A direct, fixed response preserves transport status behind TLS termination.
+  // Flight clients receive no synthetic private wire payload; navigation can
+  // fall back to the normal HTML URL. HEAD is bodyless as required.
+  return publicNotFoundResponse(request.method === "HEAD" || request.headers.get("rsc") === "1");
 }
 
-export const config = { matcher: "/cars/:slug" };
+export const config = { matcher: ["/cars/:slug", "/services/:slug", "/articles/:slug"] };

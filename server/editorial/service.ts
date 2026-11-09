@@ -1,5 +1,6 @@
 import "server-only";
 
+import { editorialOwner, publishedEditorialWhere } from "./public-scope";
 import { Prisma } from "@prisma/client";
 import { db } from "@/db/client";
 import { requireAdmin } from "@/server/auth/session";
@@ -11,7 +12,7 @@ import { validateImageUpload } from "@/validation/upload";
 import { articleSchema, categorySchema, serviceSchema, type EditorialKind } from "@/validation/editorial";
 
 const ownerId = LEGACY_DEALER_SCOPE.dealerId;
-const owner = { dealerSettingsId: ownerId, dealerSettings: { dealerId: null } } as const;
+const owner = editorialOwner;
 export class EditorialError extends Error { constructor(message: string, readonly field?: string) { super(message); } }
 const checkedId = (value: string) => { if (!value || value.length > 40) throw new EditorialError("Konten tidak ditemukan."); return value; };
 
@@ -140,20 +141,20 @@ export async function getAdminEditorial(page = 1) {
   return { categories, services, articles, serviceCount, articleCount };
 }
 
-// Future S5.2C readers. No public routes or dealer selection are introduced here.
+// Owner-qualified published readers; public routes consume safe presentation DTOs.
 export async function getPublishedServices(page = 1, categorySlug?: string, homepageOnly = false) {
   const parsedPage = Math.min(1000, Math.max(1, Math.floor(page) || 1));
   return db.showroomService.findMany({
-    where: { ...owner, status: "PUBLISHED", ...(homepageOnly ? { homepageVisible: true } : {}), category: { ...owner, active: true, ...(categorySlug ? { slug: categorySlug } : {}) } },
+    where: { ...publishedEditorialWhere("service"), ...(homepageOnly ? { homepageVisible: true } : {}), category: { ...owner, active: true, ...(categorySlug ? { slug: categorySlug } : {}) } },
     orderBy: [{ sortOrder: "asc" }, { id: "asc" }], skip: (parsedPage - 1) * 12, take: 12,
   });
 }
 export async function getPublishedArticles(page = 1) {
-  return db.article.findMany({ where: { ...owner, status: "PUBLISHED", publishedAt: { lte: new Date() } }, orderBy: [{ publishedAt: "desc" }, { id: "asc" }], skip: (Math.min(1000, Math.max(1, Math.floor(page) || 1)) - 1) * 12, take: 12 });
+  return db.article.findMany({ where: publishedEditorialWhere("article"), orderBy: [{ publishedAt: "desc" }, { id: "asc" }], skip: (Math.min(1000, Math.max(1, Math.floor(page) || 1)) - 1) * 12, take: 12 });
 }
 export async function getPublishedEditorialBySlug(kind: "service" | "article", slug: string) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 100) return null;
   return kind === "service"
-    ? db.showroomService.findFirst({ where: { ...owner, slug, status: "PUBLISHED", category: { ...owner, active: true } } })
-    : db.article.findFirst({ where: { ...owner, slug, status: "PUBLISHED", publishedAt: { lte: new Date() } } });
+    ? db.showroomService.findFirst({ where: { ...publishedEditorialWhere("service"), slug } })
+    : db.article.findFirst({ where: { ...publishedEditorialWhere("article"), slug } });
 }

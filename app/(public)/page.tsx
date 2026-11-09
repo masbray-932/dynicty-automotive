@@ -9,7 +9,9 @@ import { legacyStorefrontContext } from "@/server/storefront/context";
 import { getPublicDealerContent } from "@/server/content/service";
 import { BannerCarousel } from "@/features/content/banner-carousel";
 import { visibleItems } from "@/features/content/domain";
-import { AboutSection, AdvantagesSection, LeasingSection, FaqSection, DealerContact } from "@/features/content/public-sections";
+import { AboutSection, AdvantagesSection, LeasingSection, FaqSection, DealerContact, TestimonialsSection } from "@/features/content/public-sections";
+import { getHomepageServices } from "@/server/editorial/public";
+import { EditorialCards } from "@/features/editorial/public-content";
 export async function generateMetadata(): Promise<Metadata> {
   await connection(); const dealer=await getDealerPresentation();
   const title=`${dealer.dealerName} — Mobil Baru & Bekas`;
@@ -18,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 export default async function HomePage() {
   await connection();
-  const [{featuredCars,latestCars,brands,dealer},content]=await Promise.all([getHomepageData(legacyStorefrontContext),getPublicDealerContent()]);
+  const [{featuredCars,latestCars,brands,dealer},content,services]=await Promise.all([getHomepageData(legacyStorefrontContext),getPublicDealerContent(),getHomepageServices()]);
   const cars=[...featuredCars,...latestCars].slice(0,6);
   const main=visibleItems(content.items,"MAIN_BANNER"); const promos=visibleItems(content.items,"PROMO_BANNER");
   const profile=content.profile;
@@ -27,8 +29,9 @@ export default async function HomePage() {
     <BannerCarousel slides={main} priority />
     {profile?.welcomeActive && profile.welcomeTitle && profile.welcomeBody?<section className="py-12"><PageContainer><h2 className="text-3xl font-bold">{profile.welcomeTitle}</h2><p className="mt-4 max-w-3xl whitespace-pre-line leading-8 text-zinc-300">{profile.welcomeBody}</p></PageContainer></section>:null}
     <section className="py-8" aria-label="Pencarian mobil"><PageContainer><QuickSearch brands={brands} /></PageContainer></section>
-    {promos.length?<section className="py-8" aria-label="Promo dealer"><PageContainer className="grid gap-5">{promos.map(slide=><BannerCarousel key={slide.id} slides={[slide]} label="Banner promo" />)}</PageContainer></section>:null}
-    <section className="py-12"><PageContainer><div className="flex flex-wrap items-center justify-between gap-4"><h2 className="text-3xl font-bold">Mobil Tersedia</h2><Link className="min-h-11 py-2 font-semibold text-red-300 focus-visible:outline-2 focus-visible:outline-white" href="/cars">Lihat Semua Mobil →</Link></div><div className="mt-5 flex gap-4"><Link href="/cars?condition=NEW" className="min-h-11 rounded-lg border border-white/20 px-4 py-3 focus-visible:outline-2 focus-visible:outline-white">Mobil Baru</Link><Link href="/cars?condition=USED" className="min-h-11 rounded-lg border border-white/20 px-4 py-3 focus-visible:outline-2 focus-visible:outline-white">Mobil Bekas</Link></div>{cars.length?<div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{cars.map(car=><VehicleCard key={car.id} car={car} />)}</div>:<p className="mt-6 text-zinc-400">Belum ada mobil tersedia untuk ditampilkan.</p>}</PageContainer></section>
-    <AboutSection content={content} /><AdvantagesSection content={content} /><LeasingSection content={content} /><FaqSection content={content} /><DealerContact dealer={dealer} hours={profile?.operatingHoursActive ? profile.operatingHours : undefined} />
+    {promos.length?<section className="py-8" aria-label="Promo Bulan Ini"><PageContainer className="grid gap-5"><h2 className="text-3xl font-bold">Promo Bulan Ini</h2>{promos.map(slide=><BannerCarousel key={slide.id} slides={[slide]} label="Banner promo" />)}</PageContainer></section>:null}
+    {brands.length?<section className="py-12"><PageContainer><h2 className="text-3xl font-bold">Kategori Merek Mobil</h2><div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{brands.map(brand=><Link key={brand.slug} href={`/cars?brand=${encodeURIComponent(brand.slug)}`} className="min-h-11 rounded-xl border border-white/15 p-5 focus-visible:outline-2 focus-visible:outline-brand-focus">{brand.name} · {brand.availableCars} mobil</Link>)}</div></PageContainer></section>:null}
+    <section className="py-12"><PageContainer><div className="flex flex-wrap items-center justify-between gap-4"><h2 className="text-3xl font-bold">Daftar Stok Mobil</h2><Link className="min-h-11 py-2 font-semibold text-red-300 focus-visible:outline-2 focus-visible:outline-white" href="/cars">Lihat Semua Mobil →</Link></div><div className="mt-5 flex gap-4"><Link href="/cars?condition=NEW" className="min-h-11 rounded-lg border border-white/20 px-4 py-3 focus-visible:outline-2 focus-visible:outline-white">Mobil Baru</Link><Link href="/cars?condition=USED" className="min-h-11 rounded-lg border border-white/20 px-4 py-3 focus-visible:outline-2 focus-visible:outline-white">Mobil Bekas</Link></div>{cars.length?<div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{cars.map(car=><VehicleCard key={car.id} car={car} />)}</div>:<p className="mt-6 text-zinc-400">Belum ada mobil tersedia untuk ditampilkan.</p>}</PageContainer></section>
+    {services.length?<section className="py-12"><PageContainer><h2 className="text-3xl font-bold">Layanan Showroom</h2><EditorialCards items={services} base="/services" headingLevel={3} /></PageContainer></section>:null}<AdvantagesSection content={content} /><TestimonialsSection content={content} /><LeasingSection content={content} /><AboutSection content={content} /><FaqSection content={content} /><DealerContact dealer={dealer} hours={profile?.operatingHoursActive ? profile.operatingHours : undefined} />
   </>;
 }

@@ -12,6 +12,9 @@ function refreshSettingsConsumers() {
   revalidatePath("/admin/settings");
   revalidatePath("/", "layout");
   revalidatePath("/about");
+  for (const path of ["/services", "/articles", "/contact", "/sell-car"]) revalidatePath(path);
+  revalidatePath("/services/[slug]", "page");
+  revalidatePath("/articles/[slug]", "page");
   revalidatePath("/cars");
   revalidatePath("/cars/[slug]", "page");
   revalidatePath("/sitemap.xml");
