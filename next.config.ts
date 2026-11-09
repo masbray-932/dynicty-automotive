@@ -4,6 +4,9 @@ import { isStagingDeployment } from "./lib/deployment-environment";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The detail proxy must distinguish Flight requests before streaming starts.
+  // Next otherwise strips RSC headers from the Proxy request.
+  skipProxyUrlNormalize: true,
   experimental: { serverActions: { bodySizeLimit: "10mb" } },
   async headers() {
     const baseline = securityHeaders(process.env.NODE_ENV === "production");

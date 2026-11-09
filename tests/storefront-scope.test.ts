@@ -123,11 +123,11 @@ it("ANDs catalog search, taxonomy filters and pagination with the same ownership
   }));
 });
 
-it("returns not found and no indexable metadata for a slug outside legacy scope", async () => {
+it("throws a metadata 404 before rendering a slug outside legacy scope", async () => {
   const slug = "owned-by-dealer-a";
   expect(await getCarDetailPageData(legacy, slug)).toEqual({ kind: "not-found" });
   expect(mocks.car.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { ...published, slug } }));
-  expect(await generateMetadata({ params: Promise.resolve({ slug }) })).toMatchObject({ robots: { index: false, follow: false } });
+  await expect(generateMetadata({ params: Promise.resolve({ slug }) })).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
   expect(mocks.car.findMany).not.toHaveBeenCalled();
   expect(mocks.publicUrl).not.toHaveBeenCalled();
 });

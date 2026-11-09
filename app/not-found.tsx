@@ -1,7 +1,11 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { PageContainer } from "@/components/ui/page-container";
 
-export default function NotFound() {
+export default async function NotFound() {
+  // Excluded inventory rewrites here before streaming. Keep negative results
+  // request-time so publishing a vehicle cannot leave a cached static 404.
+  await connection();
   return (
     <main className="grid min-h-screen place-items-center py-16">
       <PageContainer className="text-center">
