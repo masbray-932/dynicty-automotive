@@ -18,7 +18,8 @@ type PageProps = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const result = await getCarDetailPageData(legacyStorefrontContext, slug);
-  if (result.kind !== "success") return { title: "Mobil Tidak Ditemukan", robots: { index: false, follow: false } };
+  if (result.kind === "not-found") notFound();
+  if (result.kind === "error") return { title: "Detail Mobil Tidak Tersedia", robots: { index: false, follow: false } };
   const description = buildVehicleSeoDescription({ title: result.car.title, transmission: result.car.transmission, dealerName: result.dealer.dealerName });
   return {
     title: { absolute: `${result.car.title} | ${result.dealer.dealerName}` },
