@@ -17,7 +17,7 @@ class ContentError extends Error {
   constructor(message: string, readonly field?: string) { super(message); }
 }
 function refresh(profileChanged = false) {
-  revalidatePath("/admin/content"); revalidatePath("/", profileChanged ? "layout" : "page"); revalidatePath("/about"); revalidatePath("/sitemap.xml");
+  revalidatePath("/admin/content"); revalidatePath("/", profileChanged ? "layout" : "page"); revalidatePath("/about"); revalidatePath("/contact"); revalidatePath("/sitemap.xml");
 }
 async function cleanup(key: string | null) {
   if (!key) return false;

@@ -4,14 +4,7 @@ import Link from "next/link";
 import { PageContainer } from "@/components/ui/page-container";
 import { createWhatsappUrl, type DealerPresentation } from "@/features/homepage/domain";
 
-const links = [
-  { href: "/", label: "Beranda" },
-  { href: "/cars?condition=NEW", label: "Mobil Baru" },
-  { href: "/cars?condition=USED", label: "Mobil Bekas" },
-  { href: "/cars", label: "Semua Mobil" },
-  { href: "/about", label: "Tentang Kami" },
-  { href: "/#contact", label: "Kontak" },
-];
+import { publicNavigation as links } from "./navigation";
 
 function Brand({ dealer }: { dealer: DealerPresentation }) {
   return (
@@ -28,24 +21,24 @@ export function SiteHeader({ dealer }: { dealer: DealerPresentation }) {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <PageContainer className="flex min-h-18 items-center justify-between gap-4 py-3">
         <Brand dealer={dealer} />
-        <nav aria-label="Navigasi utama" className="hidden lg:block">
-          <ul className="flex items-center gap-6 text-sm font-medium text-zinc-300">
+        <nav aria-label="Navigasi utama" className="hidden xl:block">
+          <ul className="flex items-center gap-4 text-sm font-medium text-zinc-300">
             {links.map((link) => <li key={link.href}><Link className="rounded-md transition hover:text-white focus-visible:outline-2 focus-visible:outline-brand-focus" href={link.href}>{link.label}</Link></li>)}
           </ul>
         </nav>
-        <div className="hidden lg:block">
-          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-xl bg-brand-primary px-4 text-sm font-bold text-brand-on-primary transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-brand-focus hover:bg-white/10" href="/#contact">Hubungi Kami</Link>}
+        <div className="hidden xl:block">
+          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-xl bg-brand-primary px-4 text-sm font-bold text-brand-on-primary transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-brand-focus hover:bg-white/10" href="/contact">Hubungi Kami</Link>}
         </div>
-        <details className="group relative lg:hidden">
+        <details className="group relative xl:hidden">
           <summary aria-label="Buka menu navigasi" className="grid min-h-11 min-w-11 cursor-pointer list-none place-items-center rounded-xl border border-white/15 text-white focus-visible:outline-2 focus-visible:outline-brand-focus">
             <span aria-hidden="true" className="text-xl group-open:hidden">☰</span><span aria-hidden="true" className="hidden text-xl group-open:inline">×</span>
           </summary>
-          <nav aria-label="Navigasi seluler" className="absolute right-0 top-14 w-64 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 p-2 shadow-2xl">
+          <div className="absolute right-0 top-14 w-64 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 p-2 shadow-2xl"><nav aria-label="Navigasi seluler">
             <ul className="grid">
               {links.map((link) => <li key={link.href}><Link className="block min-h-11 rounded-xl px-4 py-3 text-sm font-medium text-zinc-200 focus-visible:outline-2 focus-visible:outline-brand-focus hover:bg-white/10" href={link.href}>{link.label}</Link></li>)}
-              {whatsappUrl ? <li className="mt-2"><a className="block min-h-11 rounded-xl bg-brand-primary px-4 py-3 text-center text-sm font-bold text-brand-on-primary focus-visible:outline-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank">WhatsApp</a></li> : null}
-            </ul>
-          </nav>
+            </ul></nav>
+              {whatsappUrl ? <div className="mt-2"><a className="block min-h-11 rounded-xl bg-brand-primary px-4 py-3 text-center text-sm font-bold text-brand-on-primary focus-visible:outline-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank">WhatsApp</a></div> : null}
+          </div>
         </details>
       </PageContainer>
     </header>

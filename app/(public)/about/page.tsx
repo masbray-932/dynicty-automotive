@@ -12,5 +12,5 @@ export async function generateMetadata():Promise<Metadata> {
 }
 export default async function AboutPage() {
   await connection();const [dealer,content]=await Promise.all([getDealerPresentation(),getPublicDealerContent()]);
-  return <><PageContainer className="pt-12"><h1 className="text-4xl font-bold">Tentang {dealer.dealerName}</h1></PageContainer><AboutSection content={content} full /><AdvantagesSection content={content} /><DealerContact dealer={dealer} hours={content.profile?.operatingHoursActive ? content.profile.operatingHours : undefined} /></>;
+  return <><PageContainer className="pt-12"><h1 className="text-4xl font-bold">Tentang {dealer.dealerName}</h1></PageContainer><AboutSection content={content} full />{content.profile?.aboutActive?<PageContainer className="grid gap-8 pb-12">{([['history','Sejarah'],['vision','Visi'],['mission','Misi'],['achievements','Pencapaian']] as const).map(([field,label])=>content.profile?.[field]?.trim()?<section key={field}><h2 className="text-2xl font-bold">{label}</h2><p className="mt-4 whitespace-pre-line leading-8 text-zinc-300">{content.profile[field]}</p></section>:null)}</PageContainer>:null}<AdvantagesSection content={content} /><DealerContact dealer={dealer} hours={content.profile?.operatingHoursActive ? content.profile.operatingHours : undefined} /></>;
 }

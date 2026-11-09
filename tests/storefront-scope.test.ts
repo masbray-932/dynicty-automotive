@@ -156,7 +156,7 @@ it("emits only legacy sitemap rows and configured canonical paths, ignoring requ
   mocks.car.findMany.mockResolvedValueOnce([{ slug: car.slug, updatedAt: now }]);
   mocks.car.findFirst.mockResolvedValueOnce(car);
   expect((await sitemap()).map((entry) => entry.url)).toEqual([
-    "https://legacy.example", "https://legacy.example/about", "https://legacy.example/cars", "https://legacy.example/cars/legacy-car",
+    "https://legacy.example", "https://legacy.example/about", "https://legacy.example/cars", "https://legacy.example/services", "https://legacy.example/sell-car", "https://legacy.example/articles", "https://legacy.example/contact", "https://legacy.example/cars/legacy-car",
   ]);
   expect(mocks.car.findMany.mock.calls[0][0].where).toEqual(published);
   const metadata = await generateMetadata({ params: Promise.resolve({ slug: car.slug }) });
