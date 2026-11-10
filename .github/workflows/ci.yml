@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, typecheck, build, and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: dynicty_automotive_demo_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d dynicty_automotive_demo_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/dynicty_automotive_demo_ci
+      EDITORIAL_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/dynicty_automotive_demo_ci
+      SESSION_SECRET: 7d2cf0f8e8314fc19068f2f67ab9fc965e243c6601f5ee2da18f0b6b5e2170ef
+      DEPLOYMENT_ENV: production
+      NEXT_PUBLIC_SITE_URL: https://example.invalid
+      STORAGE_PROVIDER: local
+      ALLOW_STANDALONE_LOCAL_STORAGE: "true"
+      TRUST_PROXY: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply test database migrations
+        run: pnpm db:migrate:deploy
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test

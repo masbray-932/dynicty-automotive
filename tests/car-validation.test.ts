@@ -32,4 +32,13 @@ describe("car validation", () => {
     expect(carFormSchema.safeParse({ ...validCar, condition: "NEW", mileage: "" }).success).toBe(true);
     expect(parseMileage("")).toBeNull();
   });
+
+  it("accepts persisted demo inventory IDs and rejects unsafe or missing IDs", () => {
+    expect(carFormSchema.safeParse({ ...validCar, brandId: "demo-brand-toyota", modelId: "demo-model-avanza" }).success).toBe(true);
+    for (const ids of [
+      { brandId: "", modelId: "demo-model-avanza" },
+      { brandId: "demo-brand-toyota", modelId: "../other-model" },
+      { brandId: "brand with spaces", modelId: "demo-model-avanza" },
+    ]) expect(carFormSchema.safeParse({ ...validCar, ...ids }).success).toBe(false);
+  });
 });

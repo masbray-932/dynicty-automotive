@@ -24,6 +24,7 @@ const values = {
   transmission: "Auto", fuelType: "Bensin", color: "Putih", mileage: "",
   description: "Deskripsi mobil test", status: "AVAILABLE", featured: false, dealerId: "dealer-b",
 };
+const demoValues = { ...values, brandId: "demo-brand-toyota", modelId: "demo-model-avanza" };
 
 async function registered() {
   const context = await resolveInventoryReadContext("a.example");
@@ -139,15 +140,15 @@ describe("dormant mutation boundary", () => {
 
   it("uses scope rather than client-supplied ownership on car create", async () => {
     mocks.carModel.findFirst.mockResolvedValue({ name: "Model", brand: { name: "Brand" } });
-    await mutateInventory(legacy, { kind: "car.create", values });
+    await mutateInventory(legacy, { kind: "car.create", values: demoValues });
     expect(mocks.car.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ dealerId: null, brandId, modelId }),
+      data: expect.objectContaining({ dealerId: null, brandId: demoValues.brandId, modelId: demoValues.modelId }),
     }));
   });
 
   it("rejects foreign brand/model relationships before creating or updating", async () => {
     mocks.carModel.findFirst.mockResolvedValue(null);
-    await expect(mutateInventory(legacy, { kind: "car.create", values })).rejects.toThrow("Inventory relation not found.");
+    await expect(mutateInventory(legacy, { kind: "car.create", values: demoValues })).rejects.toThrow("Inventory relation not found.");
     await expect(mutateInventory(legacy, { kind: "car.update", id: "foreign-car", values })).rejects.toThrow("Inventory relation not found.");
     expect(mocks.carModel.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { dealerId: null, id: modelId, brandId, brand: { dealerId: null } },
