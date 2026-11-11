@@ -38,4 +38,3 @@ export function AdminStatusBadge({ children, tone = "neutral" }: { children: Rea
 export function AdminEmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return <div className="rounded-xl border border-dashed border-white/15 px-5 py-10 text-center"><h3 className="font-bold text-white">{title}</h3><p className="mx-auto mt-2 max-w-xl text-sm text-zinc-400">{description}</p>{action ? <div className="mt-5 flex justify-center">{action}</div> : null}</div>;
 }
-
