@@ -5,6 +5,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { DeleteItemForm, ItemEditor, ProfileEditor } from "@/features/content/content-editor";
 import { CmsFeedback } from "@/features/content/cms-feedback";
 import { isMediaKind, type ContentKind } from "@/features/content/domain";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 
 const sections = [
   { id: "PROFILE", label: "Profil Dealer", description: "Identitas, cerita, showroom, dan jam operasional." },
@@ -43,12 +44,8 @@ export default async function ContentPage({ searchParams }: { searchParams?: Pro
   const editorOpen = Boolean(kind && (edit === "new" || editedItem));
   const baseHref = sectionHref(activeSection);
 
-  return <CmsFeedback><div className="mx-auto grid w-full max-w-6xl gap-6 p-4 sm:p-8">
-    <header>
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-400">Admin CMS</p>
-      <h1 className="mt-2 text-3xl font-bold">Konten Website</h1>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">Kelola satu bagian pada satu waktu. Konten kosong atau nonaktif tidak ditampilkan di website publik. Maksimal 5 banner utama aktif dan 30 item per bagian.</p>
-    </header>
+  return <CmsFeedback><div className="mx-auto grid w-full max-w-6xl gap-6">
+    <AdminPageHeader eyebrow="Admin CMS" title="Konten Website" description="Kelola satu bagian pada satu waktu. Konten kosong atau nonaktif tidak ditampilkan di website publik. Maksimal 5 banner utama aktif dan 30 item per bagian." />
 
     <nav aria-label="Bagian konten website" className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-zinc-950/60 p-2 sm:grid-cols-4 lg:grid-cols-7">
       {sections.map(item => <Link aria-current={item.id === activeSection ? "page" : undefined} className={`flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-center text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus ${item.id === activeSection ? "bg-brand-primary text-brand-on-primary" : "text-zinc-300 hover:bg-white/10 hover:text-white"}`} href={sectionHref(item.id)} key={item.id}>{item.label}</Link>)}

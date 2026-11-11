@@ -7,8 +7,9 @@ vi.mock("next/server",()=>({connection:vi.fn()}));
 vi.mock("next/image",()=>({default:({alt,src}: {alt:string;src:string})=><span role="img" aria-label={alt} data-src={src} />}));
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));
 vi.mock("@/server/content/service",()=>({getPublicDealerContent:async()=>data.content}));
-vi.mock("@/server/homepage/service",()=>({getDealerPresentation:async()=>data.dealer,getHomepageData:async()=>({dealer:data.dealer,brands:[],featuredCars:Array.from({length:3},(_,i)=>({id:`featured-${i}`,slug:`car-${i}`,condition:"NEW",brand:"Test",model:"Model",variant:"Variant",year:2026,price:"100000000",transmission:"Automatic",mileage:null,imageUrl:null})),latestCars:Array.from({length:6},(_,i)=>({id:`latest-${i}`,slug:`latest-${i}`,condition:"USED",brand:"Test",model:"Model",variant:"Variant",year:2025,price:"90000000",transmission:"Automatic",mileage:1000,imageUrl:null}))})}));
+vi.mock("@/server/homepage/service",()=>({getDealerPresentation:async()=>data.dealer,getHomepageData:async()=>({dealer:data.dealer,brands:[{name:"Toyota",slug:"toyota",logoUrl:"/uploads/toyota.webp",availableCars:3,models:[]}],featuredCars:Array.from({length:3},(_,i)=>({id:`featured-${i}`,slug:`car-${i}`,condition:"NEW",brand:"Test",model:"Model",variant:"Variant",year:2026,price:"100000000",transmission:"Automatic",mileage:null,imageUrl:null})),latestCars:Array.from({length:6},(_,i)=>({id:`latest-${i}`,slug:`latest-${i}`,condition:"USED",brand:"Test",model:"Model",variant:"Variant",year:2025,price:"90000000",transmission:"Automatic",mileage:1000,imageUrl:null}))})}));
 vi.mock("@/server/editorial/public",()=>({getHomepageServices:async()=>[]}));
+vi.mock("@/server/sales-team/service",()=>({getPublicSalesTeam:async()=>[]}));
 import HomePage,{generateMetadata as homeMetadata} from "@/app/(public)/page";
 import AboutPage,{generateMetadata as aboutMetadata} from "@/app/(public)/about/page";
 describe("dealer content page wiring (mocked reads)",()=>{
@@ -16,6 +17,7 @@ describe("dealer content page wiring (mocked reads)",()=>{
     const html=renderToStaticMarkup(await HomePage());
     for(const text of ["Banner utama","Selamat Datang","Pencarian mobil","Promo Bulan Ini","Daftar Stok Mobil","Sekilas Tentang Kami","Kenapa Memilih Kami","Partner Leasing","Pertanyaan yang Sering Diajukan","Hubungi Dealer Test"])expect(html).toContain(text);
     expect(html).toContain('name="minPrice"');expect(html).toContain('name="maxPrice"');
+    expect(html).toContain('href="/cars?brand=toyota"');expect(html).toContain("3 mobil tersedia");expect(html).toContain("Logo Toyota");
     expect(html).toContain('/cars/latest-2');expect(html).not.toContain('/cars/latest-3');expect(html).toContain('href="https://wa.me/6281234567890"');
   });
   it("uses the same profile and factual advantages on /about",async()=>{

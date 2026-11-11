@@ -9,6 +9,7 @@ import { getLegacyPublicDealerScope } from "@/server/dealer/scope";
 import type { InventoryContext } from "@/server/inventory/context";
 import { legacyStorefrontInventory } from "@/server/storefront/inventory";
 import { legacyVehicleImageUrl } from "@/server/storefront/media";
+import { brandLogoUrl } from "@/server/master-data/brand-media";
 
 export type HomepageCar = {
   id: string;
@@ -27,6 +28,7 @@ export type HomepageCar = {
 export type HomepageBrand = {
   name: string;
   slug: string;
+  logoUrl: string | null;
   availableCars: number;
   models: Array<{ name: string; slug: string }>;
 };
@@ -122,12 +124,13 @@ async function getLatestCars(scope: ReturnType<typeof legacyStorefrontInventory>
 
 async function getBrands(scope: ReturnType<typeof legacyStorefrontInventory>) {
   const brands = await db.brand.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     take: 100,
-    where: scope.brand,
+    where: { ...scope.brand, active: true },
     select: {
       name: true,
       slug: true,
+      logoStorageKey: true,
       models: { where: scope.model, take: 100, orderBy: { name: "asc" }, select: { name: true, slug: true } },
       _count: { select: { cars: { where: scope.car } } },
     },
@@ -135,6 +138,7 @@ async function getBrands(scope: ReturnType<typeof legacyStorefrontInventory>) {
   return brands.map((brand) => ({
     name: brand.name,
     slug: brand.slug,
+    logoUrl: brandLogoUrl(brand.logoStorageKey),
     models: brand.models,
     availableCars: brand._count.cars,
   }));

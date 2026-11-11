@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { DealerSettingsForm } from "@/features/settings/dealer-settings-form";
 import { getAdminDealerSettings } from "@/server/settings/service";
 import { requireAdmin } from "@/server/auth/session";
+import { AdminFormGuard } from "@/components/admin/admin-form-guard";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 
 export default async function AdminSettingsPage() {
   await requireAdmin();
@@ -14,5 +16,5 @@ export default async function AdminSettingsPage() {
     email: settings?.email ?? null, address: settings?.address ?? null, googleMapsUrl: settings?.googleMapsUrl ?? null,
     instagramUrl: settings?.instagramUrl ?? null, facebookUrl: settings?.facebookUrl ?? null,
   };
-  return <section><div className="mb-7"><h1 className="text-3xl font-bold text-white">Pengaturan Dealer</h1><p className="mt-2 max-w-2xl text-zinc-400">Kelola nama, kontak, lokasi, dan media sosial yang digunakan website publik.</p></div><DealerSettingsForm branding={{ primaryColor: settings?.primaryColor ?? null, secondaryColor: settings?.secondaryColor ?? null }} logoUrl={result.logoUrl} values={values} /></section>;
+  return <section className="mx-auto grid max-w-5xl gap-6"><AdminPageHeader eyebrow="Konfigurasi dealer" title="Pengaturan Dealer" description="Kelola identitas, branding, kontak, lokasi, dan media sosial yang digunakan website publik." /><AdminFormGuard><DealerSettingsForm branding={{ primaryColor: settings?.primaryColor ?? null, secondaryColor: settings?.secondaryColor ?? null }} logoUrl={result.logoUrl} values={values} /></AdminFormGuard></section>;
 }

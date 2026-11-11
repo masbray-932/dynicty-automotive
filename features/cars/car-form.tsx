@@ -62,6 +62,7 @@ export function CarForm({ action, brands, defaults, submitLabel }: {
 
   return (
     <ConfirmationForm confirmation={data => vehicleConfirmation(defaults, data)} action={formAction} className="grid gap-5 lg:grid-cols-2" onSubmit={() => setClearedErrors(new Set())}>
+      <div className="border-b border-white/10 pb-2 lg:col-span-2"><h2 className="font-bold text-white">Identitas dan publikasi</h2><p className="mt-1 text-sm text-zinc-400">Tentukan kondisi, status, merek, dan model kendaraan.</p></div>
       <FormField error={field("condition")} htmlFor="condition" label="Kondisi">
         <select className={selectClass} {...control("condition")} id="condition" name="condition"><option value="NEW">Baru</option><option value="USED">Bekas</option></select>
       </FormField>
@@ -78,6 +79,7 @@ export function CarForm({ action, brands, defaults, submitLabel }: {
           <option disabled key="model-placeholder" value="">Pilih model</option>{models.map((model) => <option key={`model:${brandId}:${model.id}`} value={model.id}>{model.name}</option>)}
         </select>
       </FormField>
+      <div className="border-b border-white/10 pb-2 lg:col-span-2"><h2 className="font-bold text-white">Spesifikasi dan harga</h2><p className="mt-1 text-sm text-zinc-400">Gunakan data yang akurat dan mudah dipahami calon pembeli.</p></div>
       <FormField error={field("variant")} htmlFor="variant" label="Varian"><Input {...control("variant")} id="variant" name="variant" placeholder="1.5 G CVT" required /></FormField>
       <FormField error={field("year")} htmlFor="year" label="Tahun"><Input {...control("year")} id="year" inputMode="numeric" name="year" required type="number" /></FormField>
       <FormField error={field("price")} htmlFor="price" label="Harga (Rupiah)"><Input {...control("price")} id="price" inputMode="numeric" name="price" placeholder="225000000" required /></FormField>
@@ -86,6 +88,7 @@ export function CarForm({ action, brands, defaults, submitLabel }: {
       <FormField error={field("fuelType")} htmlFor="fuelType" label="Bahan bakar"><Input {...control("fuelType")} id="fuelType" name="fuelType" placeholder="Bensin" required /></FormField>
       <FormField error={field("color")} htmlFor="color" label="Warna"><Input {...control("color")} id="color" name="color" placeholder="Hitam" required /></FormField>
       <label className="flex min-h-11 items-center gap-3 self-end rounded-xl border border-white/15 px-4 text-sm"><input checked={draft.featured} onChange={event => { setDraft(previous => changeCarDraft(previous, "featured", event.target.checked)); clearFeedback("featured"); }} name="featured" type="checkbox" />Tampilkan sebagai unggulan</label>
+      <div className="border-b border-white/10 pb-2 lg:col-span-2"><h2 className="font-bold text-white">Deskripsi</h2><p className="mt-1 text-sm text-zinc-400">Jelaskan kondisi dan fitur penting kendaraan.</p></div>
       <div className="lg:col-span-2">
         <FormField error={field("description")} htmlFor="description" label="Deskripsi">
           <textarea className={`${selectClass} min-h-36 py-3`} {...control("description")} id="description" name="description" required />
