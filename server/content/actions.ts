@@ -8,7 +8,7 @@ import { logger } from "@/server/log";
 import { getStorageProvider } from "@/services/storage";
 import { validateImageUpload } from "@/validation/upload";
 import { contentItemSchema, dealerContentSchema } from "@/validation/dealer-content";
-import { canActivateMain, isMediaKind } from "@/features/content/domain";
+import { ADVANTAGE_SECTION_TOKEN, DEFAULT_ADVANTAGES, advantageIconToken, canActivateMain, isMediaKind } from "@/features/content/domain";
 import { actionResult, type ActionState } from "@/types/action-state";
 import { reportUploadFailure } from "@/server/upload-feedback";
 import { createContentMediaKey } from "@/services/storage/key";
@@ -104,6 +104,22 @@ export async function saveContentItemAction(_state: ActionState, form: FormData)
     if (committed) { logger.error("content.revalidation_failed"); return actionResult("warning","Konten disimpan. Muat ulang halaman untuk melihat perubahan."); }
     await cleanup(uploaded); return failed(error);
   }
+}
+export async function createDefaultAdvantagesAction(_state: ActionState, _form: FormData): Promise<ActionState> {
+  void _state; void _form;
+  await requireAdmin();
+  const { dealerId } = LEGACY_DEALER_SCOPE;
+  try {
+    await db.$transaction(async tx => {
+      await lockOwner(tx, dealerId);
+      const existing = await tx.dealerContentItem.count({where:{dealerId,kind:"ADVANTAGE",NOT:{link:ADVANTAGE_SECTION_TOKEN}}});
+      if (existing) throw new ContentError("Template hanya dapat digunakan saat belum ada kartu Keunggulan.");
+      const heading = await tx.dealerContentItem.findFirst({where:{dealerId,kind:"ADVANTAGE",link:ADVANTAGE_SECTION_TOKEN}});
+      if (!heading) await tx.dealerContentItem.create({data:{dealerId,kind:"ADVANTAGE",title:"Mengapa Memilih Kami?",body:"",link:ADVANTAGE_SECTION_TOKEN,active:true,sortOrder:0}});
+      await tx.dealerContentItem.createMany({data:DEFAULT_ADVANTAGES.map((item,index)=>({dealerId,kind:"ADVANTAGE" as const,title:item.title,body:item.body,link:advantageIconToken(item.icon),active:true,sortOrder:index+1}))});
+    });
+    refresh(); return actionResult("success","Enam kartu default ditambahkan dan siap diedit.");
+  } catch(error) { return failed(error); }
 }
 export async function deleteContentItemAction(_state: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();

@@ -3,14 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/page-container";
 import { createWhatsappUrl, type DealerPresentation } from "@/features/homepage/domain";
+import { WhatsAppIcon } from "./whatsapp-icon";
 
 import { publicNavigation as links } from "./navigation";
 
 function Brand({ dealer }: { dealer: DealerPresentation }) {
   return (
-    <Link className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-brand-focus" href="/">
-      {dealer.logoUrl ? <Image alt={`Logo ${dealer.dealerName}`} className="h-10 w-10 rounded-lg object-contain" height={40} src={dealer.logoUrl} unoptimized={shouldBypassImageOptimization(dealer.logoUrl)} width={40} /> : <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-primary text-lg font-black text-brand-on-primary">D</span>}
-      <span className="truncate font-public-display text-sm font-extrabold tracking-[0.08em] text-[#171717] sm:text-base">{dealer.dealerName}</span>
+    <Link aria-label={`${dealer.dealerName} — beranda`} className="flex min-w-0 items-center rounded-md focus-visible:outline-2 focus-visible:outline-brand-focus" href="/">
+      {dealer.logoUrl ? <Image alt="" className="h-10 w-auto max-w-[10.5rem] object-contain sm:h-11 sm:max-w-[12rem]" height={48} src={dealer.logoUrl} unoptimized={shouldBypassImageOptimization(dealer.logoUrl)} width={180} /> : <span className="truncate font-public-display text-sm font-extrabold tracking-[0.08em] text-[#171717] sm:text-base">{dealer.dealerName}</span>}
     </Link>
   );
 }
@@ -27,7 +27,7 @@ export function SiteHeader({ dealer }: { dealer: DealerPresentation }) {
           </ul>
         </nav>
         <div className="hidden xl:block">
-          {whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded bg-brand-primary px-5 text-xs font-extrabold uppercase tracking-wider text-brand-on-primary transition hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank">Hubungi Kami</a> : <Link className="inline-flex min-h-11 items-center rounded border border-[#171717] px-5 text-xs font-extrabold uppercase tracking-wider text-[#171717] focus-visible:outline-2 focus-visible:outline-brand-focus hover:bg-[#171717] hover:text-white" href="/contact">Hubungi Kami</Link>}
+          {whatsappUrl ? <a aria-label={`Chat dengan ${dealer.dealerName} via WhatsApp`} className="inline-flex min-h-11 items-center gap-2 rounded bg-brand-primary px-5 text-xs font-extrabold uppercase tracking-wider text-brand-on-primary transition hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank"><WhatsAppIcon />Chat via WhatsApp</a> : <Link className="inline-flex min-h-11 items-center rounded border border-[#171717] px-5 text-xs font-extrabold uppercase tracking-wider text-[#171717] focus-visible:outline-2 focus-visible:outline-brand-focus hover:bg-[#171717] hover:text-white" href="/contact">Kontak Dealer</Link>}
         </div>
         <details className="group relative xl:hidden">
           <summary aria-label="Buka menu navigasi" className="grid min-h-11 min-w-11 cursor-pointer list-none place-items-center rounded border border-[#E5E5E5] text-[#171717] focus-visible:outline-2 focus-visible:outline-brand-focus">
@@ -37,7 +37,7 @@ export function SiteHeader({ dealer }: { dealer: DealerPresentation }) {
             <ul className="grid">
               {links.map((link) => <li key={link.href}><Link className="block min-h-11 rounded px-4 py-3 text-sm font-semibold text-[#171717] focus-visible:outline-2 focus-visible:outline-brand-focus hover:bg-[#F6F6F6]" href={link.href}>{link.label}</Link></li>)}
             </ul></nav>
-              {whatsappUrl ? <div className="mt-2"><a className="block min-h-11 rounded bg-brand-primary px-4 py-3 text-center text-sm font-bold text-brand-on-primary focus-visible:outline-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank">WhatsApp</a></div> : null}
+              <div className="mt-2">{whatsappUrl ? <a className="flex min-h-11 items-center justify-center gap-2 rounded bg-brand-primary px-4 py-3 text-center text-sm font-bold text-brand-on-primary focus-visible:outline-2 focus-visible:outline-brand-focus" href={whatsappUrl} rel="noopener noreferrer" target="_blank"><WhatsAppIcon />Chat via WhatsApp</a> : <Link className="block min-h-11 rounded border border-[#171717] px-4 py-3 text-center text-sm font-bold text-[#171717] focus-visible:outline-2 focus-visible:outline-brand-focus" href="/contact">Kontak Dealer</Link>}</div>
           </div>
         </details>
       </PageContainer>

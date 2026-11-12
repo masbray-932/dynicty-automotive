@@ -85,11 +85,30 @@ html {
   outline: 1px solid var(--public-charcoal);
 }
 
+.scroll-reveal-ready {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 320ms ease-out, transform 320ms ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-ready.scroll-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .public-storefront *,
   .public-storefront *::before,
   .public-storefront *::after {
     scroll-behavior: auto !important;
+  }
+  .scroll-reveal-ready,
+  .scroll-reveal-ready.scroll-reveal-visible {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }

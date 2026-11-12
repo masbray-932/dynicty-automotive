@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   cookies: vi.fn(), getCookie: vi.fn(), headers: vi.fn(), session: vi.fn(), cleanup: vi.fn(),
-  settingsRead: vi.fn(), settingsWrite: vi.fn(), contentRead: vi.fn(), items: vi.fn(),
+  settingsRead: vi.fn(), settingsWrite: vi.fn(), contentRead: vi.fn(), items: vi.fn(), advantageCount: vi.fn(), advantageSection: vi.fn(),
   contentWrite: vi.fn(), owner: vi.fn(), lock: vi.fn(), transaction: vi.fn(), refresh: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
@@ -15,7 +15,7 @@ vi.mock("@/db/client", () => ({ db: {
   adminSession: { findUnique: mocks.session, deleteMany: mocks.cleanup },
   dealerSettings: { findUnique: mocks.settingsRead, upsert: mocks.settingsWrite },
   dealerContent: { findUnique: mocks.contentRead },
-  dealerContentItem: { findMany: mocks.items },
+  dealerContentItem: { findMany: mocks.items, count: mocks.advantageCount, findFirst: mocks.advantageSection },
   $transaction: mocks.transaction,
 } }));
 
@@ -49,6 +49,8 @@ beforeEach(() => {
   mocks.settingsRead.mockResolvedValue({ ...operations, primaryColor: "#123456" });
   mocks.contentRead.mockResolvedValue(null);
   mocks.items.mockResolvedValue([]);
+  mocks.advantageCount.mockResolvedValue(0);
+  mocks.advantageSection.mockResolvedValue(null);
   mocks.settingsWrite.mockResolvedValue(operations);
   mocks.transaction.mockImplementation(async (run) => run({
     dealerSettings: { upsert: mocks.owner },
@@ -144,7 +146,7 @@ describe("legacy session and data boundaries", () => {
 
   it("loads public legacy branding and active CMS content independently of the admin session", async () => {
     expect(await getDealerPresentation()).toMatchObject({ dealerName: operations.dealerName, primaryColor: "#123456" });
-    expect(await getPublicDealerContent()).toEqual({ profile: null, showroomUrl: null, items: [] });
+    expect(await getPublicDealerContent()).toEqual({ profile: null, showroomUrl: null, advantageConfigured: false, advantageSection: null, items: [] });
     expect(mocks.settingsRead).toHaveBeenCalledWith({ where: { id: "default", AND: [{ dealerId: null }] } });
     expect(mocks.contentRead).toHaveBeenCalledWith({ where: { dealerId: "default", dealer: { dealerId: null } } });
     expect(mocks.items).toHaveBeenCalledWith(expect.objectContaining({ where: { dealerId: "default", dealer: { dealerId: null }, active: true } }));

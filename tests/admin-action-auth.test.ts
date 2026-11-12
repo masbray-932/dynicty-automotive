@@ -30,6 +30,7 @@ const actions = [
   { name: "save content profile", run: () => content.saveDealerContentAction(empty, form()) },
   { name: "save content item", run: () => content.saveContentItemAction(empty, form()) },
   { name: "delete content item", run: () => content.deleteContentItemAction(empty, form()) },
+  { name: "create default advantages", run: () => content.createDefaultAdvantagesAction(empty, form()) },
   { name: "save sales member", run: () => sales.saveSalesTeamAction(empty, form()) },
   { name: "delete sales member", run: () => sales.deleteSalesTeamAction(empty, form()) },
 ];

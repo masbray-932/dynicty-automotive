@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { imageFile } from "./fixtures/images";
-const mocks=vi.hoisted(()=>({auth:vi.fn(),put:vi.fn(),remove:vi.fn(),refresh:vi.fn(),lock:vi.fn(),find:vi.fn(),count:vi.fn(),create:vi.fn(),update:vi.fn(),deleteItem:vi.fn(),profileFind:vi.fn(),profileUpsert:vi.fn()}));
+const mocks=vi.hoisted(()=>({auth:vi.fn(),put:vi.fn(),remove:vi.fn(),refresh:vi.fn(),lock:vi.fn(),find:vi.fn(),count:vi.fn(),create:vi.fn(),createMany:vi.fn(),update:vi.fn(),deleteItem:vi.fn(),profileFind:vi.fn(),profileUpsert:vi.fn()}));
 vi.mock("server-only",()=>({}));
 vi.mock("@/server/auth/session",()=>({requireAdmin:mocks.auth}));
 vi.mock("next/cache",()=>({revalidatePath:mocks.refresh}));
 vi.mock("@/server/log",()=>({logger:{error:vi.fn(),warn:vi.fn()}}));
 vi.mock("@/services/storage",()=>({getStorageProvider:()=>({put:mocks.put,delete:mocks.remove})}));
-vi.mock("@/db/client",()=>({db:{$transaction:async (fn:(tx:unknown)=>unknown)=>fn({dealerSettings:{upsert:vi.fn()},$queryRaw:mocks.lock,dealerContentItem:{findFirst:mocks.find,count:mocks.count,create:mocks.create,update:mocks.update,delete:mocks.deleteItem},dealerContent:{findUnique:mocks.profileFind,upsert:mocks.profileUpsert}})}}));
-import { saveContentItemAction, saveDealerContentAction, deleteContentItemAction } from "@/server/content/actions";
+vi.mock("@/db/client",()=>({db:{$transaction:async (fn:(tx:unknown)=>unknown)=>fn({dealerSettings:{upsert:vi.fn()},$queryRaw:mocks.lock,dealerContentItem:{findFirst:mocks.find,count:mocks.count,create:mocks.create,createMany:mocks.createMany,update:mocks.update,delete:mocks.deleteItem},dealerContent:{findUnique:mocks.profileFind,upsert:mocks.profileUpsert}})}}));
+import { createDefaultAdvantagesAction, saveContentItemAction, saveDealerContentAction, deleteContentItemAction } from "@/server/content/actions";
 const empty={message:"",errors:{}};
 function form(values:Record<string,string>={}) {const data=new FormData();for(const [key,value] of Object.entries({kind:"MAIN_BANNER",title:"Preview",body:"",link:"/cars",sortOrder:"0",active:"on",...values}))data.set(key,value);return data;}
 function png(){return imageFile("png", "../../fake.png");}
@@ -15,7 +15,7 @@ beforeEach(()=>{vi.resetAllMocks(); mocks.lock.mockResolvedValue([{id:"default"}
 describe("CMS authenticated mutation boundaries (mocked services, not DB integration)",()=>{
   it("authenticates every action before validation or persistence",async()=>{
     mocks.auth.mockRejectedValue(new Error("unauthorized"));
-    for(const action of [saveContentItemAction,saveDealerContentAction,deleteContentItemAction])await expect(action(empty,new FormData())).rejects.toThrow("unauthorized");
+    for(const action of [saveContentItemAction,saveDealerContentAction,deleteContentItemAction,createDefaultAdvantagesAction])await expect(action(empty,new FormData())).rejects.toThrow("unauthorized");
     expect(mocks.lock).not.toHaveBeenCalled();expect(mocks.put).not.toHaveBeenCalled();
   });
   it("rejects the sixth active main banner under owner lock and compensates upload",async()=>{
@@ -69,6 +69,17 @@ describe("CMS authenticated mutation boundaries (mocked services, not DB integra
     mocks.create.mockRejectedValue(new Error("DB unavailable"));const data=form();data.set("image",png());
     const result=await saveContentItemAction(empty,data);
     expect(result.status).toBe("error");expect(mocks.remove).toHaveBeenCalled();expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+  it("materializes six editable default advantages once under the owner lock",async()=>{
+    const result=await createDefaultAdvantagesAction(empty,new FormData());
+    expect(result.status).toBe("success");expect(mocks.lock).toHaveBeenCalled();
+    expect(mocks.create).toHaveBeenCalledWith({data:expect.objectContaining({dealerId:"default",kind:"ADVANTAGE",link:"cms:advantage-section"})});
+    expect(mocks.createMany).toHaveBeenCalledWith({data:expect.arrayContaining([expect.objectContaining({kind:"ADVANTAGE",active:true,link:"cms:advantage-icon:quality"})])});
+    expect(mocks.createMany.mock.calls[0][0].data).toHaveLength(6);
+  });
+  it("refuses to duplicate default advantages",async()=>{
+    mocks.count.mockResolvedValue(1);const result=await createDefaultAdvantagesAction(empty,new FormData());
+    expect(result.status).toBe("error");expect(result.message).toContain("belum ada");expect(mocks.createMany).not.toHaveBeenCalled();
   });
 });
 

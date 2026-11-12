@@ -8,9 +8,9 @@ import { profileConfirmation, contentConfirmation, criticalAction } from "@/feat
 import { FormField } from "@/components/ui/form-field";
 import { useFeedbackAction } from "@/features/forms/use-feedback-action";
 import { useCmsFeedback } from "./cms-feedback";
-import { saveDealerContentAction, saveContentItemAction, deleteContentItemAction } from "@/server/content/actions";
+import { createDefaultAdvantagesAction, saveDealerContentAction, saveContentItemAction, deleteContentItemAction } from "@/server/content/actions";
 import { BannerCarousel } from "./banner-carousel";
-import { isMediaKind, type ContentKind, type PublicContentItem } from "./domain";
+import { ADVANTAGE_ICON_KEYS, ADVANTAGE_SECTION_TOKEN, advantageIconFromToken, advantageIconToken, isMediaKind, type ContentKind, type PublicContentItem } from "./domain";
 const input = "w-full min-h-11 rounded-lg border border-white/20 bg-zinc-950 px-3 py-2 text-white focus-visible:outline-2 focus-visible:outline-brand-focus";
 const button = "min-h-11 rounded-lg bg-brand-primary px-5 py-2 font-bold text-brand-on-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus";
 function Status({message,errors}:{message:string;errors:Record<string,string[]|undefined>}) {return <div role="status" className="text-sm text-zinc-200"><p>{message}</p>{Object.entries(errors).map(([field,list])=>list?.length?<p key={field}>{list.join(" ")}</p>:null)}</div>;}
@@ -48,7 +48,7 @@ function Preview({item,url}:{item:PublicContentItem;url:string|null}) {
   const [width,setWidth]=useState(390);
   return <div className="grid gap-2"><label className="grid gap-2">Preview perangkat<select className={input} value={width} onChange={e=>setWidth(Number(e.target.value))}><option value={390}>HP — 390px</option><option value={768}>Tablet — 768px</option><option value={1280}>Desktop — 1280px</option></select></label><div className="mx-auto w-full" style={{maxWidth:width}}><BannerCarousel slides={url?[{...item,mediaUrl:url}]:[]} previewWidth={width} label="Preview banner" /></div></div>;
 }
-export function ItemEditor({kind,item,cancelHref}:{kind:ContentKind;item?:PublicContentItem;cancelHref:string}) {
+export function ItemEditor({kind,item,cancelHref,sectionHeading=false}:{kind:ContentKind;item?:PublicContentItem;cancelHref:string;sectionHeading?:boolean}) {
   const notify=useCmsFeedback();
   const router=useRouter();
   const [dirty,setDirty]=useState(false);
@@ -63,14 +63,27 @@ export function ItemEditor({kind,item,cancelHref}:{kind:ContentKind;item?:Public
     <header><p className="text-xs font-bold uppercase tracking-wider text-red-400">{item?"Edit konten":"Konten baru"}</p><h3 className="mt-1 text-xl font-bold">{item?.title ?? "Lengkapi detail konten"}</h3></header>
     <ConfirmationForm action={action} confirmation={data => contentConfirmation(item, data)} className="grid gap-4" onChangeCapture={()=>setDirty(true)}>
       <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item?.id??""} />
-      <Field label={kind==="TESTIMONIAL"?"Attribution — nama tampilan yang diizinkan":kind==="FAQ"?"Pertanyaan":media?"Deskripsi gambar / nama partner":"Judul"} name="title" value={item?.title} error={state.errors.title?.[0]} />
-      {!media ? <Field label={kind==="TESTIMONIAL"?"Kutipan testimoni asli (tanpa rating buatan)":kind==="FAQ"?"Jawaban":"Penjelasan faktual"} name="body" value={item?.body} multiline max={3000} error={state.errors.body?.[0]} />:<input type="hidden" name="body" value="" />}
-      {media ? <><Field label="Link opsional — /cars atau https://…" name="link" value={item?.link} max={500} error={state.errors.link?.[0]} /><FormField error={state.errors.image?.[0]} htmlFor={imageId} label="Satu gambar untuk semua perangkat — maksimal 8 MB"><input type="file" name="image" accept="image/jpeg,image/png,image/webp" required={!item} className={input} onChange={event=>{const file=event.target.files?.[0];setLocalUrl(file?URL.createObjectURL(file):null);}} /></FormField><Preview item={draft} url={localUrl ?? item?.mediaUrl??null} /></>:<input type="hidden" name="link" value="" />}
-      <Field label="Urutan (angka terkecil lebih dahulu)" name="sortOrder" value={String(item?.sortOrder??0)} error={state.errors.sortOrder?.[0]} type="number" min={0} maxValue={999} />
-      <ToggleLabel><DraftCheckbox name="active" initial={item?.active} /> Aktif dan tampil di website</ToggleLabel>
+      <Field label={sectionHeading?"Judul bagian":kind==="TESTIMONIAL"?"Attribution — nama tampilan yang diizinkan":kind==="FAQ"?"Pertanyaan":media?"Deskripsi gambar / nama partner":"Judul"} name="title" value={item?.title??(sectionHeading?"Mengapa Memilih Kami?":undefined)} error={state.errors.title?.[0]} />
+      {sectionHeading?<input type="hidden" name="body" value=""/>:!media ? <Field label={kind==="TESTIMONIAL"?"Kutipan testimoni asli (tanpa rating buatan)":kind==="FAQ"?"Jawaban":"Penjelasan faktual"} name="body" value={item?.body} multiline max={3000} error={state.errors.body?.[0]} />:<input type="hidden" name="body" value="" />}
+      {sectionHeading?<input type="hidden" name="link" value={ADVANTAGE_SECTION_TOKEN}/>:media ? <><Field label="Link opsional — /cars atau https://…" name="link" value={item?.link} max={500} error={state.errors.link?.[0]} /><FormField error={state.errors.image?.[0]} htmlFor={imageId} label="Satu gambar untuk semua perangkat — maksimal 8 MB"><input type="file" name="image" accept="image/jpeg,image/png,image/webp" required={!item} className={input} onChange={event=>{const file=event.target.files?.[0];setLocalUrl(file?URL.createObjectURL(file):null);}} /></FormField><Preview item={draft} url={localUrl ?? item?.mediaUrl??null} /></>:kind==="ADVANTAGE"?<AdvantageIconSelect value={item?.link??""} error={state.errors.link?.[0]}/>:<input type="hidden" name="link" value="" />}
+      {sectionHeading?<input type="hidden" name="sortOrder" value="0"/>:<Field label="Urutan (angka terkecil lebih dahulu)" name="sortOrder" value={String(item?.sortOrder??0)} error={state.errors.sortOrder?.[0]} type="number" min={0} maxValue={999} />}
+      <ToggleLabel><DraftCheckbox name="active" initial={item?.active??sectionHeading} /> {sectionHeading?"Tampilkan bagian Mengapa Memilih di website":"Aktif dan tampil di website"}</ToggleLabel>
       <div className="flex flex-wrap gap-3"><button type="submit" disabled={pending} className={button}>{pending?"Menyimpan…":item?"Simpan perubahan":"Tambah item"}</button><CancelEditorButton dirty={dirty} leave={()=>router.push(cancelHref)} /></div><Status {...state} />
     </ConfirmationForm>
   </article>;
+}
+
+function AdvantageIconSelect({value,error}:{value:string;error?:string}) {
+  const id=useId();
+  const labels:Record<(typeof ADVANTAGE_ICON_KEYS)[number],string>={quality:"Kualitas",transparent:"Transparansi",professional:"Profesional",easy:"Proses mudah",consultation:"Konsultasi",satisfaction:"Kepuasan"};
+  const selected=advantageIconFromToken(value);
+  return <FormField error={error} htmlFor={id} label="Ikon manfaat"><select className={input} defaultValue={selected?advantageIconToken(selected):""} id={id} name="link"><option value="">Otomatis berdasarkan urutan</option>{ADVANTAGE_ICON_KEYS.map(icon=><option key={icon} value={advantageIconToken(icon)}>{labels[icon]}</option>)}</select></FormField>;
+}
+
+export function DefaultAdvantagesForm() {
+  const notify=useCmsFeedback();
+  const [state,action,pending]=useFeedbackAction(createDefaultAdvantagesAction,notify);
+  return <ConfirmationForm action={action} confirmation={()=>criticalAction("Gunakan enam konten default?","Template akan membuat enam kartu aktif yang dapat langsung diedit, diurutkan, atau dinonaktifkan.","Gunakan template")} className="grid gap-2"><button className={button} disabled={pending} type="submit">{pending?"Menambahkan…":"Gunakan 6 konten default"}</button><Status {...state}/></ConfirmationForm>;
 }
 
 export function DeleteItemForm({item}:{item:PublicContentItem}) {
