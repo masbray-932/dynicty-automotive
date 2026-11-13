@@ -16,7 +16,7 @@ describe("public content SSR regression",()=>{
     const multiple=renderToStaticMarkup(<BannerCarousel slides={[item,{...item,id:"two"}]} />);expect(multiple).toContain("Banner sebelumnya");expect(multiple).toContain("inert");expect(multiple).toContain("Jeda pergantian otomatis");
   });
   it("uses cinematic full-bleed geometry and never renders CMS banner links as promotional actions",()=>{
-    const html=renderToStaticMarkup(<BannerCarousel slides={[item]} previewWidth={1280} />);expect(html).toContain("h-[clamp(24rem,68vw,52rem)]");expect(html).toContain("aspect-ratio:21 / 9");expect(html).not.toContain('href="/cars"');expect(html).not.toContain("<button");
+    const html=renderToStaticMarkup(<BannerCarousel slides={[item]} previewWidth={1280} />);expect(html).toContain("h-[clamp(16rem,75vw,24rem)]");expect(html).toContain("sm:h-[clamp(24rem,68vw,52rem)]");expect(html).toContain("aspect-ratio:21 / 9");expect(html).not.toContain('href="/cars"');expect(html).not.toContain("<button");
   });
   it("renders optional CMS welcome copy as a non-interactive banner overlay",()=>{
     const html=renderToStaticMarkup(<BannerCarousel slides={[item]} headline="Selamat datang" description="Profil dealer" />);expect(html).toContain("Selamat datang");expect(html).toContain("Profil dealer");expect(html).toContain("pointer-events-none");expect(html).not.toContain('href="/cars"');

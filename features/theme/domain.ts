@@ -53,6 +53,13 @@ export function readableForeground(background: string): "#000000" | "#FFFFFF" {
   return contrastRatio(background, "#000000") >= contrastRatio(background, "#FFFFFF") ? "#000000" : "#FFFFFF";
 }
 
+export const DEFAULT_STOREFRONT_HEADER = "#7F1D1D";
+
+export function storefrontHeaderColor(primary: string | null | undefined) {
+  const candidate = normalizeThemeColor(primary);
+  return candidate && contrastRatio(candidate, "#FFFFFF") >= 4.5 ? candidate : DEFAULT_STOREFRONT_HEADER;
+}
+
 export function resolveAutomotiveTheme(overrides: unknown = null) {
   const tokens: CanonicalTokens = { ...AUTOMOTIVE_TOKEN_DEFAULTS };
   let hasCustomAccent = false;

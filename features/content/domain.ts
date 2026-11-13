@@ -1,6 +1,7 @@
 export const CONTENT_KINDS = ["MAIN_BANNER", "PROMO_BANNER", "ADVANTAGE", "FAQ", "LEASING_PARTNER", "TESTIMONIAL"] as const;
 export type ContentKind = typeof CONTENT_KINDS[number];
 export const MAX_MAIN_SLIDES = 5;
+export const MAX_VISIBLE_ADVANTAGES = 6;
 export const AUTOPLAY_MS = 5000;
 export const ADVANTAGE_SECTION_TOKEN = "cms:advantage-section";
 export const ADVANTAGE_ICON_KEYS = ["quality", "transparent", "professional", "easy", "consultation", "satisfaction"] as const;
@@ -31,6 +32,7 @@ export function isAdvantageCmsToken(value: string) {
 export function isMediaKind(kind: ContentKind) {
   return kind === "MAIN_BANNER" || kind === "PROMO_BANNER" || kind === "LEASING_PARTNER";
 }
+export function supportsOptionalMedia(kind: ContentKind) { return kind === "ADVANTAGE"; }
 export function safeContentLink(value: string) {
   if (!value) return true;
   if (/[\s\\\u0000-\u001f\u007f]/.test(value) || /%0[ad]|%5c/i.test(value)) return false;
@@ -42,6 +44,7 @@ export function bannerFit(width: number, height: number): "cover" | "contain" {
 }
 export function bannerRatio(viewportWidth: number) { return viewportWidth >= 1280 ? "21 / 9" : "2 / 1"; }
 export function canActivateMain(countExcludingCurrent: number) { return countExcludingCurrent < MAX_MAIN_SLIDES; }
+export function canActivateAdvantage(countExcludingCurrent: number) { return countExcludingCurrent < MAX_VISIBLE_ADVANTAGES; }
 export type PublicContentItem = {
   id: string; kind: ContentKind; title: string; body: string; link: string;
   active: boolean; sortOrder: number; mediaUrl: string | null;
@@ -52,5 +55,5 @@ export function visibleItems(items: PublicContentItem[], kind: ContentKind) {
     ((kind !== "FAQ" && kind !== "ADVANTAGE" && kind !== "TESTIMONIAL") || item.body.trim()) &&
     (kind === "ADVANTAGE" ? (!item.link || isAdvantageCmsToken(item.link)) : safeContentLink(item.link)))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id))
-    .slice(0, kind === "MAIN_BANNER" ? MAX_MAIN_SLIDES : 30);
+    .slice(0, kind === "MAIN_BANNER" ? MAX_MAIN_SLIDES : kind === "ADVANTAGE" ? MAX_VISIBLE_ADVANTAGES : 30);
 }

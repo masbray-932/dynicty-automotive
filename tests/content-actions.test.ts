@@ -24,6 +24,17 @@ describe("CMS authenticated mutation boundaries (mocked services, not DB integra
     expect(result.message).toContain("Maksimal 5");expect(mocks.lock).toHaveBeenCalled();expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.remove).toHaveBeenCalledWith(expect.stringMatching(/^dealers\/default\/content\/main_banner\//));expect(mocks.refresh).not.toHaveBeenCalled();
   });
+  it("limits visible advantages to six and accepts a securely validated custom icon",async()=>{
+    mocks.count.mockResolvedValueOnce(6);
+    const blocked=form({kind:"ADVANTAGE",title:"Ketujuh",body:"Fakta",link:"cms:advantage-icon:quality"});
+    expect((await saveContentItemAction(empty,blocked)).message).toContain("Maksimal 6");
+    expect(mocks.create).not.toHaveBeenCalled();
+    vi.resetAllMocks();mocks.lock.mockResolvedValue([{id:"default"}]);mocks.auth.mockResolvedValue({id:"admin"});mocks.count.mockResolvedValue(0);mocks.find.mockResolvedValue(null);mocks.put.mockResolvedValue({});mocks.remove.mockResolvedValue(undefined);
+    const accepted=form({kind:"ADVANTAGE",title:"Ikon khusus",body:"Fakta",link:"cms:advantage-icon:quality"});accepted.set("image",png());
+    expect(await saveContentItemAction(empty,accepted)).toMatchObject({status:"success"});
+    expect(mocks.put).toHaveBeenCalledWith(expect.objectContaining({key:expect.stringMatching(/^dealers\/default\/content\/advantage\//)}));
+    expect(mocks.create).toHaveBeenCalledWith({data:expect.objectContaining({kind:"ADVANTAGE",mediaKey:expect.stringMatching(/^dealers\/default\/content\/advantage\//)})});
+  });
   it("validates upload signatures before DB writes",async()=>{
     const data=form();data.set("image",new File(["MZ executable"],"banner.png",{type:"image/png"}));
     expect((await saveContentItemAction(empty,data)).message).toContain("Isi file");expect(mocks.put).not.toHaveBeenCalled();expect(mocks.lock).not.toHaveBeenCalled();

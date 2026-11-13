@@ -15,7 +15,7 @@ import AboutPage,{generateMetadata as aboutMetadata} from "@/app/(public)/about/
 describe("dealer content page wiring (mocked reads)",()=>{
   it("wires agreed Homepage sections and limits displayed inventory to six",async()=>{
     const html=renderToStaticMarkup(await HomePage());
-    for(const text of ["Banner utama","Selamat Datang","Pencarian mobil","Promo Bulan Ini","Daftar Stok Mobil","Sekilas Tentang Kami","Mengapa Memilih Dealer Test?","Apa Kata Pelanggan Kami","Pelanggan test","Partner Leasing","Pertanyaan yang Sering Diajukan","Hubungi Dealer Test"])expect(html).toContain(text);
+    for(const text of ["Banner utama","Selamat Datang","Pencarian mobil","Promo &amp; Kategori Merek","Daftar Stok Mobil","Sekilas Tentang Kami","Mengapa Memilih Dealer Test?","Apa Kata Pelanggan Kami","Pelanggan test","Partner Leasing","Pertanyaan yang Sering Diajukan","Hubungi Dealer Test"])expect(html).toContain(text);
     expect(html).toContain('name="minPrice"');expect(html).toContain('name="maxPrice"');
     expect(html).toContain('href="/cars?brand=toyota"');expect(html).toContain("3 mobil tersedia");expect(html).toContain("Logo Toyota");
     expect(html).toContain('/cars/latest-2');expect(html).not.toContain('/cars/latest-3');expect(html).toContain('href="https://wa.me/6281234567890"');

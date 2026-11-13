@@ -6,7 +6,10 @@ export type PublicCarCondition = "NEW" | "USED";
 export type DealerPresentation = {
   dealerName: string;
   logoUrl: string | null;
+  faviconUrl?: string | null;
   whatsappNumber: string | null;
+  whatsappWidgetEnabled?: boolean;
+  whatsappWidgetMessage?: string;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -20,7 +23,10 @@ export type DealerPresentation = {
 export const dealerFallback: DealerPresentation = {
   dealerName: "Dynicty Automotive",
   logoUrl: null,
+  faviconUrl: null,
   whatsappNumber: null,
+  whatsappWidgetEnabled: true,
+  whatsappWidgetMessage: "",
   phone: null,
   email: null,
   address: null,
@@ -56,6 +62,13 @@ export function shouldShowMileage(condition: PublicCarCondition, mileage: number
   return condition === "USED" && mileage !== null && mileage > 0;
 }
 
+export type StockSummary = { availableCount: number; lastUpdatedAt: Date | null };
+
+export function formatStockUpdateDate(value: Date | null) {
+  if (!value || Number.isNaN(value.getTime())) return null;
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "Asia/Jakarta" }).format(value);
+}
+
 export function normalizeWhatsappNumber(value: string | null | undefined) {
   if (!value) return null;
   const input = value.trim();
@@ -67,9 +80,11 @@ export function normalizeWhatsappNumber(value: string | null | undefined) {
   return /^\d{10,15}$/.test(digits) ? digits : null;
 }
 
-export function createWhatsappUrl(value: string | null | undefined) {
+export function createWhatsappUrl(value: string | null | undefined, message?: string | null) {
   const number = normalizeWhatsappNumber(value);
-  return number ? `https://wa.me/${number}` : null;
+  if (!number) return null;
+  const text = message?.trim();
+  return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
 
 export type HomepageSearchInput = {
@@ -91,8 +106,9 @@ export function createHomepageSearchParams(input: HomepageSearchInput) {
 }
 
 export function mergeDealerPresentation(
-  settings: Partial<Omit<DealerPresentation, "logoUrl">> | null,
+  settings: Partial<Omit<DealerPresentation, "logoUrl" | "faviconUrl">> | null,
   logoUrl: string | null = null,
+  faviconUrl: string | null = null,
 ): DealerPresentation {
   const clean = (value: string | null | undefined, fallback: string | null = null) => {
     const normalized = value?.trim();
@@ -101,7 +117,10 @@ export function mergeDealerPresentation(
   return {
     dealerName: clean(settings?.dealerName, dealerFallback.dealerName)!,
     logoUrl,
+    faviconUrl,
     whatsappNumber: clean(settings?.whatsappNumber),
+    whatsappWidgetEnabled: settings?.whatsappWidgetEnabled ?? dealerFallback.whatsappWidgetEnabled,
+    whatsappWidgetMessage: clean(settings?.whatsappWidgetMessage, "") ?? "",
     phone: clean(settings?.phone),
     email: clean(settings?.email),
     address: clean(settings?.address),

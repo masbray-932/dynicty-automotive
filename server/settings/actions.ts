@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireLegacyAdminPermission } from "@/server/auth/session";
 import { logger } from "@/server/log";
 import { upsertDealerSettings } from "./service";
-import { LogoUploadError, removeStandaloneLogo, replaceStandaloneLogo, saveStandaloneColors, standaloneBrandingPermission } from "./branding";
+import { FaviconUploadError, LogoUploadError, removeStandaloneFavicon, removeStandaloneLogo, replaceStandaloneFavicon, replaceStandaloneLogo, saveStandaloneColors, standaloneBrandingPermission } from "./branding";
 import { dealerBrandingColorsSchema } from "@/validation/dealer-branding";
 import { actionResult, type ActionState } from "@/types/action-state";
 import { dealerSettingsFields, dealerSettingsSchema, isDealerSettingsField } from "@/validation/dealer-settings";
@@ -26,7 +26,7 @@ export async function saveDealerSettingsAction(_state: ActionState, formData: Fo
   for (const key of formData.keys()) {
     // Next/React may attach action metadata. It is never projected into settings.
     if (key.startsWith("$ACTION_")) continue;
-    if (["primaryColor", "secondaryColor", "logoStorageKey", "logo"].includes(key)) {
+    if (["primaryColor", "secondaryColor", "logoStorageKey", "faviconStorageKey", "logo", "favicon"].includes(key)) {
       return actionResult("error", "Warna dan logo dealer dikelola oleh platform.");
     }
     if (!isDealerSettingsField(key) || seen.has(key)) {
@@ -35,7 +35,7 @@ export async function saveDealerSettingsAction(_state: ActionState, formData: Fo
     seen.add(key);
   }
   const parsed = dealerSettingsSchema.safeParse(
-    Object.fromEntries(dealerSettingsFields.map((key) => [key, formData.get(key) ?? ""])),
+    Object.fromEntries(dealerSettingsFields.map((key) => [key, key === "whatsappWidgetEnabled" ? formData.get(key) === "on" : formData.get(key) ?? ""])),
   );
   if (!parsed.success) return actionResult("error", "Periksa kembali pengaturan dealer.", parsed.error.flatten().fieldErrors);
   try { await upsertDealerSettings(parsed.data); }
@@ -79,6 +79,27 @@ function finishBranding(message: string, cleanupFailed = false) {
       : "Branding disimpan. Muat ulang halaman untuk melihat perubahan.");
   }
   return cleanupFailed ? actionResult("warning", `${message} File logo lama perlu dibersihkan manual.`) : actionResult("success", message);
+}
+
+export async function replaceStandaloneFaviconAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  await requireLegacyAdminPermission(standaloneBrandingPermission);
+  if (!validBrandingFields(form, ["favicon"])) return actionResult("error", "Kolom favicon tidak valid.");
+  let cleanupFailed: boolean;
+  try { ({ cleanupFailed } = await replaceStandaloneFavicon(form.get("favicon"))); }
+  catch (error) {
+    const message = error instanceof FaviconUploadError ? error.message : "Favicon dealer tidak dapat disimpan.";
+    return actionResult("error", message, { favicon: [message] });
+  }
+  return finishBranding("Favicon dealer berhasil disimpan.", cleanupFailed);
+}
+
+export async function removeStandaloneFaviconAction(_state: ActionState, form: FormData): Promise<ActionState> {
+  await requireLegacyAdminPermission(standaloneBrandingPermission);
+  if (!validBrandingFields(form, [])) return actionResult("error", "Kolom favicon tidak valid.");
+  let cleanupFailed: boolean;
+  try { ({ cleanupFailed } = await removeStandaloneFavicon()); }
+  catch { logger.error("dealer.favicon_removal_failed"); return actionResult("error", "Favicon dealer tidak dapat dihapus."); }
+  return finishBranding("Favicon dealer berhasil dihapus.", cleanupFailed);
 }
 
 export async function saveStandaloneColorsAction(_state: ActionState, form: FormData): Promise<ActionState> {

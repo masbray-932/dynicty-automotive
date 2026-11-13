@@ -13,8 +13,9 @@ export default async function AdminSettingsPage() {
   const settings = result.settings;
   const values = {
     dealerName: settings?.dealerName ?? null, phone: settings?.phone ?? null, whatsappNumber: settings?.whatsappNumber ?? null,
+    whatsappWidgetEnabled: settings?.whatsappWidgetEnabled ?? true, whatsappWidgetMessage: settings?.whatsappWidgetMessage ?? "",
     email: settings?.email ?? null, address: settings?.address ?? null, googleMapsUrl: settings?.googleMapsUrl ?? null,
     instagramUrl: settings?.instagramUrl ?? null, facebookUrl: settings?.facebookUrl ?? null,
   };
-  return <section className="mx-auto grid max-w-5xl gap-6"><AdminPageHeader eyebrow="Konfigurasi dealer" title="Pengaturan Dealer" description="Kelola identitas, branding, kontak, lokasi, dan media sosial yang digunakan website publik." /><AdminFormGuard><DealerSettingsForm branding={{ primaryColor: settings?.primaryColor ?? null, secondaryColor: settings?.secondaryColor ?? null }} logoUrl={result.logoUrl} values={values} /></AdminFormGuard></section>;
+  return <section className="mx-auto grid max-w-5xl gap-6"><AdminPageHeader eyebrow="Konfigurasi dealer" title="Pengaturan Dealer" description="Kelola identitas, branding, kontak, lokasi, dan media sosial yang digunakan website publik." /><AdminFormGuard><DealerSettingsForm branding={{ primaryColor: settings?.primaryColor ?? null, secondaryColor: settings?.secondaryColor ?? null }} faviconUrl={result.faviconUrl} logoUrl={result.logoUrl} values={values} /></AdminFormGuard></section>;
 }

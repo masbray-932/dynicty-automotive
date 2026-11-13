@@ -190,7 +190,10 @@ model DealerSettings {
   id                String              @id @default("default")
   dealerName        String              @default("Dynicty Automotive")
   logoStorageKey    String?
+  faviconStorageKey String?
   whatsappNumber    String?
+  whatsappWidgetEnabled Boolean         @default(true)
+  whatsappWidgetMessage String          @default("") @db.VarChar(500)
   phone             String?
   email             String?
   address           String?
