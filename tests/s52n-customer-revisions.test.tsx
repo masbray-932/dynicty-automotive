@@ -25,7 +25,7 @@ describe("S5.2N approved customer revisions",()=>{
   });
   it("renders the floating widget only with an enabled valid dealer number",()=>{
     const html=renderToStaticMarkup(<FloatingWhatsapp dealer={dealer}/>);
-    expect(html).toContain("bottom-[max(5rem");expect(html).toContain("Halo%20%26%20info");
+    expect(html).toContain("bottom-[max(5rem");expect(html).toContain("h-12");expect(html).toContain("Halo%20%26%20info");
     expect(renderToStaticMarkup(<FloatingWhatsapp dealer={{...dealer,whatsappWidgetEnabled:false}}/>)).toBe("");
     expect(renderToStaticMarkup(<FloatingWhatsapp dealer={{...dealer,whatsappNumber:"invalid"}}/>)).toBe("");
   });

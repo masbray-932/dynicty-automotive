@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from "react";
 import { buildSellCarWhatsapp, sellCarSchema } from "./domain";
 import { normalizeWhatsappNumber } from "@/features/homepage/domain";
 import { whatsappButtonClass } from "@/components/public/whatsapp-link";
+import { WhatsAppIcon } from "@/components/public/whatsapp-icon";
 const subscribe=()=>()=>{};
 const control="public-control w-full px-3 py-2 focus-visible:outline-2 focus-visible:outline-brand-focus";
 export function SellCarInquiry({number}:{number:string|null}) {
@@ -13,9 +14,9 @@ export function SellCarInquiry({number}:{number:string|null}) {
  <fieldset disabled={!ready} className="contents">
  {([['name','Nama Anda','text'],['contact','Nomor kontak','tel'],['brand','Merek kendaraan','text'],['model','Model kendaraan','text'],['year','Tahun produksi','number'],['transmission','Transmisi','select'],['mileage','Jarak tempuh (km)','number'],['price','Harga jual yang diharapkan (Rp)','number'],['notes','Catatan opsional','textarea']] as const).map(([name,label,type])=><div key={name} className={name==='notes'?'grid gap-2 sm:col-span-2':'grid gap-2'}><label htmlFor={`sell-${name}`}>{label}</label>{type==='select'?<select id={`sell-${name}`} name={name} className={control} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name]?`sell-${name}-error`:undefined}><option value="">Pilih transmisi</option><option>Manual</option><option>Automatic</option></select>:type==='textarea'?<textarea id={`sell-${name}`} name={name} className={control} maxLength={2000} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name]?`sell-${name}-error`:undefined}/>:<input id={`sell-${name}`} name={name} type={type} className={control} maxLength={name==='name'||name==='model'?100:name==='brand'?80:30} required min={type==='number'?0:undefined} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name]?`sell-${name}-error`:undefined}/>} {errors[name]?<p id={`sell-${name}-error`} className="text-sm text-red-300">{errors[name]?.join(' ')}</p>:null}</div>)}
  <p className="text-sm leading-6 text-[#606060] sm:col-span-2">Data hanya digunakan di perangkat ini untuk menyusun pesan. Tinjau pesan di WhatsApp dan kirim jika Anda setuju. Website ini tidak menyimpan data inquiry.</p>
- <button className={whatsappButtonClass}>Siapkan pesan WhatsApp</button>
+ <button className={whatsappButtonClass}><WhatsAppIcon />Siapkan pesan WhatsApp</button>
  {Object.keys(errors).length?<p role="alert">Periksa field yang ditandai.</p>:null}
- {href?<a href={href} target="_blank" rel="noopener noreferrer" className={whatsappButtonClass}>Buka WhatsApp untuk meninjau pesan</a>:null}
+ {href?<a href={href} target="_blank" rel="noopener noreferrer" className={whatsappButtonClass}><WhatsAppIcon />Buka WhatsApp untuk meninjau pesan</a>:null}
  </fieldset>
  </form>;
 }
