@@ -46,7 +46,9 @@ export function settingsConfirmation(original: Values, data: FormData): Confirma
   const normalized = new FormData();
   for (const [key, value] of data) normalized.set(key, value);
   const effective = { ...original, dealerName: original.dealerName ?? "Dynicty Automotive" };
-  const changes = changesFor(effective, normalized, { dealerName: "Nama dealer", whatsappNumber: "WhatsApp", phone: "Telepon", email: "Email", address: "Alamat showroom", googleMapsUrl: "Lokasi Maps", instagramUrl: "Instagram", facebookUrl: "Facebook" });
+  const managesWidget = data.has("whatsappWidgetMessage") || Object.hasOwn(original, "whatsappWidgetEnabled") || Object.hasOwn(original, "whatsappWidgetMessage");
+  if (managesWidget) normalized.set("whatsappWidgetEnabled", data.get("whatsappWidgetEnabled") === "on" ? "true" : "false");
+  const changes = changesFor(effective, normalized, { dealerName: "Nama dealer", whatsappNumber: "WhatsApp", ...(managesWidget ? { whatsappWidgetEnabled: "Widget WhatsApp", whatsappWidgetMessage: "Pesan widget WhatsApp" } : {}), phone: "Telepon", email: "Email", address: "Alamat showroom", googleMapsUrl: "Lokasi Maps", instagramUrl: "Instagram", facebookUrl: "Facebook" });
   return changes.length ? { ...criticalAction("Ubah identitas atau kontak dealer?", "Pengunjung menggunakan informasi ini untuk menghubungi dan menemukan dealer."), changes } : null;
 }
 export function profileConfirmation(original: Values | null, data: FormData): Confirmation | null {

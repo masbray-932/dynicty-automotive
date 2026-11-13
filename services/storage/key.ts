@@ -32,6 +32,11 @@ export function createDealerLogoKey(originalName: string, uniqueSuffix = crypto.
   return `dealer/logo/${uniqueSuffix}-${fileName}`;
 }
 
+export function createDealerFaviconKey(uniqueSuffix = crypto.randomUUID()) {
+  assertSuffix(uniqueSuffix);
+  return `dealer/favicon/${uniqueSuffix}-favicon.webp`;
+}
+
 export function assertSafeStorageKey(key: string) {
   if (!key || key.startsWith("/") || key.includes("..") || key.includes("\\")) {
     throw new Error("Unsafe storage key.");
@@ -39,7 +44,7 @@ export function assertSafeStorageKey(key: string) {
 }
 
 export function createContentMediaKey(namespace: string, mime: string, suffix = crypto.randomUUID()) {
-  if (!["showroom", "main_banner", "promo_banner", "leasing_partner"].includes(namespace)) throw new Error("Invalid content namespace.");
+  if (!["showroom", "main_banner", "promo_banner", "leasing_partner", "advantage"].includes(namespace)) throw new Error("Invalid content namespace.");
   const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mime];
   if (!extension || !/^[a-zA-Z0-9-]+$/.test(suffix)) throw new Error("Invalid media key input.");
   return `dealers/default/content/${namespace}/${suffix}.${extension}`;
@@ -57,6 +62,11 @@ export function isDealerLogoKey(key: string) {
     !key.includes("..") && !/\s/.test(key);
 }
 
+export function isDealerFaviconKey(key: string) {
+  return /^dealer\/favicon\/[a-z0-9_-][a-z0-9._-]*\.webp$/i.test(key) &&
+    !key.includes("..") && !/\s/.test(key);
+}
+
 export function createEditorialMediaKey(kind: "service" | "article", mime: string, suffix = crypto.randomUUID()) {
   const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mime];
   if (!["service", "article"].includes(kind) || !extension) throw new Error("Invalid editorial media input.");
@@ -66,4 +76,26 @@ export function createEditorialMediaKey(kind: "service" | "article", mime: strin
 
 export function isEditorialMediaKey(key: string) {
   return /^dealers\/default\/editorial\/(?:service|article)\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp)$/.test(key);
+}
+
+export function createBrandLogoKey(mime: string, suffix = crypto.randomUUID()) {
+  const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mime];
+  if (!extension) throw new Error("Invalid brand logo input.");
+  assertSuffix(suffix);
+  return `dealers/default/brands/${suffix}.${extension}`;
+}
+
+export function isBrandLogoKey(key: string) {
+  return /^dealers\/default\/brands\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp)$/.test(key) && !key.includes("..");
+}
+
+export function createSalesPhotoKey(mime: string, suffix = crypto.randomUUID()) {
+  const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mime];
+  if (!extension) throw new Error("Invalid sales photo input.");
+  assertSuffix(suffix);
+  return `dealers/default/sales/${suffix}.${extension}`;
+}
+
+export function isSalesPhotoKey(key: string) {
+  return /^dealers\/default\/sales\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp)$/.test(key) && !key.includes("..");
 }

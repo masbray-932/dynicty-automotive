@@ -2,11 +2,15 @@ import { z } from "zod";
 
 const currentYear = new Date().getFullYear();
 
+function inventoryId(message: string) {
+  return z.string().trim().min(1, message).max(128, message).regex(/^[a-zA-Z0-9_-]+$/, message);
+}
+
 export const carFormSchema = z
   .object({
     condition: z.enum(["NEW", "USED"], "Pilih kondisi kendaraan."),
-    brandId: z.string().cuid("Pilih merek yang valid."),
-    modelId: z.string().cuid("Pilih model yang valid."),
+    brandId: inventoryId("Pilih merek yang valid."),
+    modelId: inventoryId("Pilih model yang valid."),
     variant: z.string().trim().min(1, "Varian wajib diisi.").max(120),
     year: z.coerce.number().int().min(1900).max(currentYear + 1),
     price: z.string().trim().min(1, "Harga wajib diisi."),

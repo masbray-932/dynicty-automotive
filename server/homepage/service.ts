@@ -2,13 +2,14 @@ import "server-only";
 
 import { cache } from "react";
 import { db } from "@/db/client";
-import { HOMEPAGE_CAR_LIMIT, dealerFallback, mergeDealerPresentation, selectFeaturedHomepageCars } from "@/features/homepage/domain";
-import { legacyDealerLogoUrl } from "@/server/settings/logo-url";
+import { HOMEPAGE_CAR_LIMIT, dealerFallback, mergeDealerPresentation, selectFeaturedHomepageCars, type StockSummary } from "@/features/homepage/domain";
+import { legacyDealerFaviconUrl, legacyDealerLogoUrl } from "@/server/settings/logo-url";
 import { logger } from "@/server/log";
 import { getLegacyPublicDealerScope } from "@/server/dealer/scope";
 import type { InventoryContext } from "@/server/inventory/context";
 import { legacyStorefrontInventory } from "@/server/storefront/inventory";
 import { legacyVehicleImageUrl } from "@/server/storefront/media";
+import { brandLogoUrl } from "@/server/master-data/brand-media";
 
 export type HomepageCar = {
   id: string;
@@ -27,6 +28,7 @@ export type HomepageCar = {
 export type HomepageBrand = {
   name: string;
   slug: string;
+  logoUrl: string | null;
   availableCars: number;
   models: Array<{ name: string; slug: string }>;
 };
@@ -86,7 +88,7 @@ export const getDealerPresentation = cache(async () => {
     const { dealerId } = getLegacyPublicDealerScope();
     const settings = await db.dealerSettings.findUnique({ where: { id: dealerId, AND: [{ dealerId: null }] } });
     if (!settings) return dealerFallback;
-    return mergeDealerPresentation(settings, legacyDealerLogoUrl(settings.logoStorageKey));
+    return mergeDealerPresentation(settings, legacyDealerLogoUrl(settings.logoStorageKey), legacyDealerFaviconUrl(settings.faviconStorageKey));
   } catch {
     logger.error("public.dealer_settings_read_failed");
     return dealerFallback;
@@ -110,6 +112,14 @@ async function getFeaturedCars(scope: ReturnType<typeof legacyStorefrontInventor
   }))).map((candidate) => toHomepageCar(candidate.car));
 }
 
+async function getStockSummary(scope: ReturnType<typeof legacyStorefrontInventory>): Promise<StockSummary> {
+  const [availableCount, latest] = await Promise.all([
+    db.car.count({ where: scope.car }),
+    db.car.findFirst({ where: scope.car, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], select: { updatedAt: true } }),
+  ]);
+  return { availableCount, lastUpdatedAt: latest?.updatedAt ?? null };
+}
+
 async function getLatestCars(scope: ReturnType<typeof legacyStorefrontInventory>, excludedIds: string[]) {
   const cars = await db.car.findMany({
     where: { ...scope.car, ...(excludedIds.length ? { id: { notIn: excludedIds } } : {}) },
@@ -122,12 +132,13 @@ async function getLatestCars(scope: ReturnType<typeof legacyStorefrontInventory>
 
 async function getBrands(scope: ReturnType<typeof legacyStorefrontInventory>) {
   const brands = await db.brand.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     take: 100,
-    where: scope.brand,
+    where: { ...scope.brand, active: true },
     select: {
       name: true,
       slug: true,
+      logoStorageKey: true,
       models: { where: scope.model, take: 100, orderBy: { name: "asc" }, select: { name: true, slug: true } },
       _count: { select: { cars: { where: scope.car } } },
     },
@@ -135,6 +146,7 @@ async function getBrands(scope: ReturnType<typeof legacyStorefrontInventory>) {
   return brands.map((brand) => ({
     name: brand.name,
     slug: brand.slug,
+    logoUrl: brandLogoUrl(brand.logoStorageKey),
     models: brand.models,
     availableCars: brand._count.cars,
   }));
@@ -151,14 +163,15 @@ async function safely<T>(operation: () => Promise<T>, fallback: T) {
 
 export async function getHomepageData(context: InventoryContext) {
   const scope = legacyStorefrontInventory(context);
-  const [featuredCars, brands, dealer] = await Promise.all([
+  const [featuredCars, brands, dealer, stockSummary] = await Promise.all([
     safely(() => getFeaturedCars(scope), [] as HomepageCar[]),
     safely(() => getBrands(scope), [] as HomepageBrand[]),
     getDealerPresentation(),
+    safely(() => getStockSummary(scope), { availableCount: 0, lastUpdatedAt: null } as StockSummary),
   ]);
   const latestCars = await safely(
     () => getLatestCars(scope, featuredCars.map((car) => car.id)),
     [] as HomepageCar[],
   );
-  return { featuredCars, latestCars, brands, dealer };
+  return { featuredCars, latestCars, brands, dealer, stockSummary };
 }

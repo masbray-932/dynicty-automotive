@@ -8,7 +8,7 @@ import { logger } from "@/server/log";
 import { getStorageProvider } from "@/services/storage";
 import { validateImageUpload } from "@/validation/upload";
 import { contentItemSchema, dealerContentSchema } from "@/validation/dealer-content";
-import { canActivateMain, isMediaKind } from "@/features/content/domain";
+import { ADVANTAGE_SECTION_TOKEN, DEFAULT_ADVANTAGES, advantageIconToken, canActivateAdvantage, canActivateMain, isMediaKind, supportsOptionalMedia } from "@/features/content/domain";
 import { actionResult, type ActionState } from "@/types/action-state";
 import { reportUploadFailure } from "@/server/upload-feedback";
 import { createContentMediaKey } from "@/services/storage/key";
@@ -80,22 +80,26 @@ export async function saveContentItemAction(_state: ActionState, form: FormData)
   let uploaded: string | null = null;
   let committed = false;
   try {
-    if (isMediaKind(parsed.data.kind)) uploaded = await upload(form,parsed.data.kind.toLowerCase());
+    if (isMediaKind(parsed.data.kind) || supportsOptionalMedia(parsed.data.kind)) uploaded = await upload(form,parsed.data.kind.toLowerCase());
     const oldKey = await db.$transaction(async tx => {
       await lockOwner(tx, dealerId);
       const {id,...values} = parsed.data;
       const existing = id ? await tx.dealerContentItem.findFirst({where:{id,dealerId,kind:values.kind}}) : null;
       if (id && !existing) throw new ContentError("Konten tidak ditemukan.");
-      const mediaKey = uploaded ?? existing?.mediaKey ?? null;
+      const mediaKey = uploaded ?? (form.get("removeImage")==="on" ? null : existing?.mediaKey ?? null);
       if (isMediaKind(values.kind) && !mediaKey) throw new ContentError("Pilih satu gambar untuk bagian ini.");
       if (values.active && values.kind==="MAIN_BANNER") {
         const count = await tx.dealerContentItem.count({where:{dealerId,kind:"MAIN_BANNER",active:true,...(id ? {NOT:{id}} : {})}});
         if (!canActivateMain(count)) throw new ContentError("Maksimal 5 banner utama aktif. Nonaktifkan satu terlebih dahulu.");
       }
+      if (values.active && values.kind==="ADVANTAGE" && values.link!==ADVANTAGE_SECTION_TOKEN) {
+        const count = await tx.dealerContentItem.count({where:{dealerId,kind:"ADVANTAGE",active:true,NOT:{OR:[...(id ? [{id}] : []),{link:ADVANTAGE_SECTION_TOKEN}]}}});
+        if (!canActivateAdvantage(count)) throw new ContentError("Maksimal 6 keunggulan aktif. Nonaktifkan satu terlebih dahulu.");
+      }
       if (!id && await tx.dealerContentItem.count({where:{dealerId,kind:values.kind}}) >= 30) throw new ContentError("Maksimal 30 item per bagian.");
       if (existing) await tx.dealerContentItem.update({where:{id:existing.id},data:{...values,mediaKey}});
       else await tx.dealerContentItem.create({data:{dealerId,...values,mediaKey}});
-      return uploaded ? existing?.mediaKey ?? null : null;
+      return existing?.mediaKey !== mediaKey ? existing?.mediaKey ?? null : null;
     });
     committed = true;
     const orphan = await cleanup(oldKey); refresh();
@@ -104,6 +108,22 @@ export async function saveContentItemAction(_state: ActionState, form: FormData)
     if (committed) { logger.error("content.revalidation_failed"); return actionResult("warning","Konten disimpan. Muat ulang halaman untuk melihat perubahan."); }
     await cleanup(uploaded); return failed(error);
   }
+}
+export async function createDefaultAdvantagesAction(_state: ActionState, _form: FormData): Promise<ActionState> {
+  void _state; void _form;
+  await requireAdmin();
+  const { dealerId } = LEGACY_DEALER_SCOPE;
+  try {
+    await db.$transaction(async tx => {
+      await lockOwner(tx, dealerId);
+      const existing = await tx.dealerContentItem.count({where:{dealerId,kind:"ADVANTAGE",NOT:{link:ADVANTAGE_SECTION_TOKEN}}});
+      if (existing) throw new ContentError("Template hanya dapat digunakan saat belum ada kartu Keunggulan.");
+      const heading = await tx.dealerContentItem.findFirst({where:{dealerId,kind:"ADVANTAGE",link:ADVANTAGE_SECTION_TOKEN}});
+      if (!heading) await tx.dealerContentItem.create({data:{dealerId,kind:"ADVANTAGE",title:"Mengapa Memilih Kami?",body:"",link:ADVANTAGE_SECTION_TOKEN,active:true,sortOrder:0}});
+      await tx.dealerContentItem.createMany({data:DEFAULT_ADVANTAGES.map((item,index)=>({dealerId,kind:"ADVANTAGE" as const,title:item.title,body:item.body,link:advantageIconToken(item.icon),active:true,sortOrder:index+1}))});
+    });
+    refresh(); return actionResult("success","Enam kartu default ditambahkan dan siap diedit.");
+  } catch(error) { return failed(error); }
 }
 export async function deleteContentItemAction(_state: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();

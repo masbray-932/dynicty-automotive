@@ -1,0 +1,3 @@
+export function WhatsAppIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.3-4.3a8.5 8.5 0 1 1 15.7-4.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"/><path d="M8.2 7.8c.2-.5.4-.5.8-.5h.4c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4-.1.6.5 1 1.3 1.8 2.3 2.3.2.1.4.1.6-.1l.8-1c.2-.2.4-.3.7-.2l1.8.8c.3.1.4.3.4.5 0 .4-.2 1.5-1 2.1-.7.6-1.7.9-2.7.6-1.3-.3-3-1.1-4.6-2.6-1.3-1.3-2.2-2.8-2.5-4.1-.3-1 .1-1.6.5-2Z" fill="currentColor"/></svg>;
+}

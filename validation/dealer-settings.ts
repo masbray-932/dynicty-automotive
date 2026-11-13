@@ -11,6 +11,8 @@ export const dealerSettingsSchema = z.strictObject({
   dealerName: z.string().trim().min(2, "Nama dealer wajib diisi.").max(100, "Maksimal 100 karakter."),
   phone: optionalText(30).refine((value) => !value || (/^[+\d\s().-]+$/.test(value) && value.replace(/\D/g, "").length >= 7), "Nomor telepon tidak valid."),
   whatsappNumber: optionalText(30).refine((value) => !value || normalizeWhatsappNumber(value) !== null, "Nomor WhatsApp tidak valid."),
+  whatsappWidgetEnabled: z.boolean().default(true),
+  whatsappWidgetMessage: z.string().trim().max(500, "Pesan WhatsApp maksimal 500 karakter.").default(""),
   email: z.string().trim().max(254).refine((value) => !value || z.email().safeParse(value).success, "Email tidak valid.").transform((value) => value ? value.toLowerCase() : null).nullable(),
   address: z.string().trim().min(1, "Alamat showroom wajib diisi.").max(500, "Alamat maksimal 500 karakter."),
   googleMapsUrl: optionalUrl,

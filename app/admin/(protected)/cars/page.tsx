@@ -10,6 +10,7 @@ import { formatDate, formatRupiah } from "@/lib/format";
 import { legacyVehicleImageUrl } from "@/server/storefront/media";
 import { requireAdmin } from "@/server/auth/session";
 import { standaloneOwner, standaloneCar } from "@/server/standalone/inventory";
+import { AdminActionLink, AdminPageHeader, AdminSection } from "@/components/admin/admin-ui";
 
 const statusLabels = { DRAFT: "Draft", AVAILABLE: "Tersedia", SOLD: "Terjual" } as const;
 
@@ -40,10 +41,10 @@ export default async function AdminCarsPage({ searchParams }: { searchParams: Pr
   const requestedNotice = firstParam(query.notice);
   const notice = requestedNotice === "deleted" ? "Mobil berhasil dihapus." : requestedNotice === "deleted-cleanup-warning" ? "Mobil dihapus, tetapi sebagian media perlu dibersihkan manual." : "";
   return (
-    <section>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Kelola Mobil</h1><p className="mt-2 text-zinc-400">{cars.length} kendaraan ditemukan</p></div><Link className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white" href="/admin/cars/new">Tambah mobil</Link></div>
+    <section className="mx-auto grid max-w-7xl gap-6">
+      <AdminPageHeader eyebrow="Inventori" title="Kelola Mobil" description={`${cars.length} kendaraan ditemukan. Cari, filter, dan kelola status kendaraan dari satu tempat.`} actions={<AdminActionLink href="/admin/cars/new">Tambah mobil</AdminActionLink>} />
       {notice ? <p className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">{notice}</p> : null}
-      <form className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-zinc-900 p-4 sm:grid-cols-[1fr_180px_auto]" method="get"><input className="min-h-11 rounded-lg border border-white/15 bg-black/30 px-4" defaultValue={search} maxLength={100} name="q" placeholder="Cari mobil" /><select className="min-h-11 rounded-lg border border-white/15 bg-zinc-950 px-4" defaultValue={status ?? ""} name="status"><option value="">Semua status</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="rounded-lg bg-white px-4 font-semibold text-black" type="submit">Filter</button></form>
+      <AdminSection title="Pencarian dan filter"><form className="grid gap-3 sm:grid-cols-[1fr_180px_auto]" method="get"><label className="sr-only" htmlFor="admin-car-search">Cari mobil</label><input className="min-h-11 rounded-lg border border-white/15 bg-black/30 px-4" defaultValue={search} id="admin-car-search" maxLength={100} name="q" placeholder="Cari merek, model, varian, atau slug" /><label className="sr-only" htmlFor="admin-car-status">Status</label><select className="min-h-11 rounded-lg border border-white/15 bg-zinc-950 px-4" defaultValue={status ?? ""} id="admin-car-status" name="status"><option value="">Semua status</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="min-h-11 rounded-lg bg-white px-4 font-semibold text-black focus-visible:outline-2 focus-visible:outline-brand-focus" type="submit">Terapkan</button></form></AdminSection>
       {cars.length === 0 ? <EmptyState title="Inventori kosong" description="Tambahkan mobil pertama atau ubah filter pencarian." /> : (
         <div className="overflow-x-auto rounded-xl border border-white/10"><table className="w-full min-w-[980px] text-left text-sm"><thead className="bg-white/5 text-zinc-400"><tr><th className="p-3">Mobil</th><th className="p-3">Kondisi</th><th className="p-3">Tahun</th><th className="p-3">Harga</th><th className="p-3">Status</th><th className="p-3">Diperbarui</th><th className="p-3">Aksi</th></tr></thead><tbody>{cars.map((car) => {
           const coverUrl = legacyVehicleImageUrl(car.id, car.images[0]?.storageKey);
