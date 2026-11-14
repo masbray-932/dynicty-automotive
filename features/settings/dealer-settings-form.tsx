@@ -12,6 +12,7 @@ import type { ActionState } from "@/types/action-state";
 import type { DealerSettingsValues } from "@/validation/dealer-settings";
 import { removeStandaloneFaviconAction, removeStandaloneLogoAction, replaceStandaloneFaviconAction, replaceStandaloneLogoAction, saveDealerSettingsAction, saveStandaloneColorsAction } from "@/server/settings/actions";
 import { normalizeThemeColor } from "@/features/theme/domain";
+import { MediaUploadField } from "@/components/admin/media-upload-field";
 
 type Values = { [K in keyof DealerSettingsValues]?: DealerSettingsValues[K] | null };
 type TextSetting = Exclude<keyof Values, "whatsappWidgetEnabled" | "inventoryMode">;
@@ -68,7 +69,7 @@ function BrandingForms({ colors, logoUrl, faviconUrl, onResult }: { colors: Bran
       {logoUrl ? <Image alt="Logo dealer saat ini" className="h-28 w-28 rounded-xl border border-white/10 bg-white object-contain p-2" height={112} src={logoUrl} unoptimized={shouldBypassImageOptimization(logoUrl)} width={112} />
         : <p className="text-sm text-zinc-400">Belum ada logo.</p>}
       <ConfirmationForm action={logoAction} confirmation={() => criticalAction(logoUrl ? "Ganti logo dealer?" : "Tampilkan logo dealer?", "Logo ini akan digunakan di website publik.", "Simpan logo")} className="grid flex-1 gap-2">
-        <Field error={logoState.errors.logo} htmlFor="dealer-logo" label="File logo (JPEG, PNG, atau WebP)"><input accept="image/jpeg,image/png,image/webp" className={inputClass} id="dealer-logo" name="logo" required type="file" /></Field>
+        <MediaUploadField spec="dealerLogo" name="logo" id="dealer-logo" required className={inputClass} error={logoState.errors.logo?.[0]} />
         <Button className="w-fit" disabled={busy} type="submit">{logoUrl ? "Ganti Logo" : "Unggah Logo"}</Button>
       </ConfirmationForm>
       {logoUrl ? <ConfirmationForm action={removeAction} confirmation={() => criticalAction("Hapus logo dealer?", "Website akan menampilkan logo bawaan.", "Hapus logo", true)}>
@@ -77,7 +78,7 @@ function BrandingForms({ colors, logoUrl, faviconUrl, onResult }: { colors: Bran
     </div>
     <div className="grid gap-4 rounded-xl border border-white/10 p-4 sm:grid-cols-[6rem_1fr] sm:items-center">
       <div>{faviconUrl ? <Image alt="Favicon dealer saat ini" className="h-20 w-20 rounded-xl border border-white/10 bg-white object-contain p-2" height={80} src={faviconUrl} unoptimized={shouldBypassImageOptimization(faviconUrl)} width={80} /> : <div className="grid h-20 w-20 place-items-center rounded-xl border border-dashed border-white/15 text-center text-xs text-zinc-500">Favicon bawaan</div>}</div>
-      <div className="grid gap-3"><p className="text-sm text-zinc-300">Favicon tampil pada tab browser. File aman akan diproses menjadi WebP 192×192.</p><ConfirmationForm action={faviconAction} confirmation={() => criticalAction(faviconUrl ? "Ganti favicon dealer?" : "Unggah favicon dealer?", "Favicon baru akan digunakan oleh halaman publik.", "Simpan favicon")} className="grid gap-2"><Field error={faviconState.errors.favicon} htmlFor="dealer-favicon" label="File favicon (JPEG, PNG, atau WebP)"><input accept="image/jpeg,image/png,image/webp" className={inputClass} id="dealer-favicon" name="favicon" required type="file" /></Field><Button className="w-fit" disabled={busy} type="submit">{faviconUrl ? "Ganti Favicon" : "Unggah Favicon"}</Button></ConfirmationForm>{faviconUrl ? <ConfirmationForm action={removeFaviconAction} confirmation={() => criticalAction("Hapus favicon dealer?", "Website akan kembali memakai favicon platform.", "Hapus favicon", true)}><Button disabled={busy} type="submit" variant="danger">Hapus Favicon</Button></ConfirmationForm> : null}</div>
+      <div className="grid gap-3"><p className="text-sm text-zinc-300">Favicon tampil pada tab browser dan diproses menjadi WebP 192×192.</p><ConfirmationForm action={faviconAction} confirmation={() => criticalAction(faviconUrl ? "Ganti favicon dealer?" : "Unggah favicon dealer?", "Favicon baru akan digunakan oleh halaman publik.", "Simpan favicon")} className="grid gap-2"><MediaUploadField spec="favicon" name="favicon" id="dealer-favicon" required className={inputClass} error={faviconState.errors.favicon?.[0]} /><Button className="w-fit" disabled={busy} type="submit">{faviconUrl ? "Ganti Favicon" : "Unggah Favicon"}</Button></ConfirmationForm>{faviconUrl ? <ConfirmationForm action={removeFaviconAction} confirmation={() => criticalAction("Hapus favicon dealer?", "Website akan kembali memakai favicon platform.", "Hapus favicon", true)}><Button disabled={busy} type="submit" variant="danger">Hapus Favicon</Button></ConfirmationForm> : null}</div>
     </div>
     <ConfirmationForm action={colorAction} confirmation={() => criticalAction("Simpan warna dealer?", "Warna baru akan digunakan di website publik.", "Simpan warna")} className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-2">

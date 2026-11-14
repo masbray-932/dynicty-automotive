@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("next/image",()=>({default:({alt,src,className}:{alt:string;src:string;className?:string})=><span role="img" aria-label={alt} data-src={src} className={className}/> }));
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));
+vi.mock("next/navigation",()=>({usePathname:()=>"/cars"}));
 import { FloatingWhatsapp } from "@/components/public/floating-whatsapp";
 import { SiteHeader } from "@/components/public/site-header";
 import { WhatsAppLink } from "@/components/public/whatsapp-link";
@@ -18,12 +19,13 @@ describe("S5.2N premium public contact treatment",()=>{
     expect(storefrontHeaderColor("#FFEEEE")).toBe(DEFAULT_STOREFRONT_HEADER);
   });
 
-  it("uses the approved gradient consistently in a viewport-safe mobile menu",()=>{
+  it("uses the approved white two-row header and viewport-safe mobile menu",()=>{
     const html=renderToStaticMarkup(<SiteHeader dealer={dealer}/>);
     expect(storefrontHeaderBackground(dealer.primaryColor)).toBe(AUTO18_STOREFRONT_GRADIENT);
-    expect(html.match(/linear-gradient\(110deg/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain("bg-white");
+    expect(html).not.toContain("linear-gradient(110deg");
     expect(html).toContain("w-[min(18rem,calc(100vw-2rem))]");
-    expect(html).toContain("max-h-[calc(100dvh-5.5rem)]");
+    expect(html).toContain("max-h-[calc(100dvh-8rem)]");
     expect(html).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");
     expect(html).toContain('aria-label="Navigasi seluler"');
   });

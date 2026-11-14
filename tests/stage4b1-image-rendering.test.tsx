@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactNode } from "react";
 vi.mock("next/image", () => ({ default: ({ src, alt, unoptimized, sizes }: { src: string; alt: string; unoptimized?: boolean; sizes?: string }) => <span role="img" aria-label={alt} data-src={src} data-direct={String(Boolean(unoptimized))} data-sizes={sizes} /> }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a> }));
+vi.mock("next/navigation",()=>({usePathname:()=>"/"}));
 import { shouldBypassImageOptimization } from "@/lib/image-delivery";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { VehicleGallery } from "@/features/car-detail/gallery";

@@ -11,6 +11,7 @@ import { useFeedbackAction } from "@/features/forms/use-feedback-action";
 import { useCmsFeedback } from "./cms-feedback";
 import { deleteEditorialAction, saveEditorialAction } from "@/server/editorial/actions";
 import type { EditorialKind } from "@/validation/editorial";
+import { MediaUploadField } from "@/components/admin/media-upload-field";
 
 export type EditorialDraft = Record<string, string | boolean>;
 const controlClass = "min-h-11 w-full rounded-xl border border-white/20 bg-zinc-950 px-3 py-2 text-white focus-visible:outline-2 focus-visible:outline-brand-focus";
@@ -38,7 +39,7 @@ export function EditorialEditor({ kind, initial, categories = [], imageUrl }: { 
         {field(kind === "service" ? "shortDescription" : "excerpt", kind === "service" ? "Ringkasan layanan" : "Cuplikan artikel", true, 1500)}
         {field("body", kind === "service" ? "Deskripsi lengkap" : "Isi artikel — teks biasa, bukan HTML", true, 30000)}
         {field("imageAlt", "Deskripsi gambar", false, 200)}
-        <FormField error={state.errors.image?.[0]} htmlFor={`${prefix}-image`} label="Gambar opsional — JPEG/PNG/WebP, maksimal 8 MiB / 25 megapiksel"><input className={controlClass} name="image" type="file" accept="image/jpeg,image/png,image/webp" /></FormField>
+        <MediaUploadField spec="editorial" id={`${prefix}-image`} className={controlClass} error={state.errors.image?.[0]} />
         {imageUrl ? <Image src={imageUrl} alt={text("imageAlt")} width={480} height={270} unoptimized className="max-h-64 w-full rounded-xl object-contain" /> : null}
         {initial?.hasImage ? <label><input name="removeImage" type="checkbox" checked={Boolean(draft.removeImage)} onChange={event => update("removeImage", event.target.checked)} /> Hapus gambar tersimpan (upload baru menggantikan gambar lama)</label> : null}
         <FormField error={state.errors.status?.[0]} htmlFor={`${prefix}-status`} label="Publikasi"><select className={controlClass} name="status" value={text("status")} onChange={event => update("status", event.target.value)}><option value="DRAFT">Draft</option><option value="PUBLISHED">Terbit</option></select></FormField>

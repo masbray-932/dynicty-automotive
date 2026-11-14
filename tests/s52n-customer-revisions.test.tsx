@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("next/image",()=>({default:({alt,src,className}: {alt:string;src:string;className?:string})=><span role="img" aria-label={alt} data-src={src} className={className} />}));
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));
+vi.mock("next/navigation",()=>({usePathname:()=>"/"}));
 import { FloatingWhatsapp } from "@/components/public/floating-whatsapp";
 import { SiteHeader } from "@/components/public/site-header";
 import { BannerCarousel } from "@/features/content/banner-carousel";
@@ -23,7 +24,7 @@ describe("S5.2N approved customer revisions",()=>{
     expect(storefrontHeaderColor("#FFEEEE")).toBe(DEFAULT_STOREFRONT_HEADER);
     expect(storefrontHeaderBackground("#C8102E")).toBe(AUTO18_STOREFRONT_GRADIENT);
     const html=renderToStaticMarkup(<SiteHeader dealer={{...dealer,primaryColor:"#C8102E"}}/>);
-    expect(html).toContain("linear-gradient(110deg, #650B16 0%, #990015 55%, #C90016 100%)");expect(html).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");expect(html).toContain("text-white");
+    expect(html).toContain("bg-white");expect(html).not.toContain("linear-gradient(110deg");expect(html).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");
   });
   it("renders the floating widget only with an enabled valid dealer number",()=>{
     const html=renderToStaticMarkup(<FloatingWhatsapp dealer={dealer}/>);
@@ -34,7 +35,7 @@ describe("S5.2N approved customer revisions",()=>{
   it("keeps hero copy below the image on mobile and preserves the desktop overlay",()=>{
     const hero={...slide,kind:"MAIN_BANNER" as const};
     const html=renderToStaticMarkup(<BannerCarousel slides={[hero]} headline="Judul dealer" description="Deskripsi dealer"/>);
-    expect(html).toContain("hidden bg-gradient-to-t");expect(html).toContain("sm:block");expect(html).toContain("bg-white px-5 py-6");expect(html).toContain("object-contain sm:object-cover");expect(html).toContain("aspect-[var(--mobile-banner-ratio)]");
+    expect(html).toContain("bg-gradient-to-r");expect(html).toContain("sm:flex");expect(html).toContain("bg-white px-5 py-6");expect(html).toContain("object-contain sm:object-cover");expect(html).toContain("aspect-[var(--mobile-banner-ratio)]");
   });
   it("constrains used-only dealers without changing the default multi-dealer behavior",()=>{
     expect(applyInventoryMode({filters:{condition:"NEW",sort:"newest",page:1},issues:[]},"USED_ONLY").filters.condition).toBe("USED");

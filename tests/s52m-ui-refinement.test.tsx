@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 vi.mock("server-only",()=>({}));
 vi.mock("next/image",()=>({default:({alt,src,className}:{alt:string;src:string;className?:string})=><span role="img" aria-label={alt} data-src={src} className={className}/> }));
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));
+vi.mock("next/navigation",()=>({usePathname:()=>"/"}));
 import { SiteHeader } from "@/components/public/site-header";
 import { ScrollReveal } from "@/components/public/scroll-reveal";
 import { AdvantagesSection } from "@/features/content/public-sections";

@@ -10,14 +10,14 @@ export function QuickSearch({ brands, inventoryMode = "BOTH" }: { brands: Homepa
 
   return (
     <form action="/cars" className="grid gap-4 rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-[0_12px_32px_-16px_rgba(23,23,23,0.18)] sm:grid-cols-2 lg:grid-cols-3" method="get">
-      <label className="grid gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#606060]">
+      {inventoryMode === "BOTH" ? <label className="grid gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#606060]">
         Kondisi
         <select className="public-control px-3 text-sm font-normal normal-case" name="condition" defaultValue={inventoryCondition(inventoryMode) ?? ""}>
           {inventoryMode === "BOTH" ? <option value="">Semua kondisi</option> : null}
-          {inventoryMode !== "USED_ONLY" ? <option value="NEW">Mobil baru</option> : null}
-          {inventoryMode !== "NEW_ONLY" ? <option value="USED">Mobil bekas</option> : null}
+          <option value="NEW">Mobil baru</option>
+          <option value="USED">Mobil bekas</option>
         </select>
-      </label>
+      </label> : <input name="condition" type="hidden" value={inventoryCondition(inventoryMode)} />}
       <label className="grid gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#606060]">
         Merek
         <select className="public-control px-3 text-sm font-normal normal-case" name="brand" value={brand} onChange={(event) => setBrand(event.target.value)}>
