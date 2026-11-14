@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { constrainInventoryCondition, type InventoryMode } from "@/features/homepage/domain";
 
 export const CATALOG_PAGE_SIZE = 12;
 export const catalogSortValues = ["newest", "price-asc", "price-desc", "year-desc", "year-asc"] as const;
@@ -20,6 +21,13 @@ export type CatalogFilters = {
 };
 
 export type ParsedCatalogFilters = { filters: CatalogFilters; issues: string[] };
+
+export function applyInventoryMode(parsed: ParsedCatalogFilters, mode: InventoryMode): ParsedCatalogFilters {
+  const constrained = constrainInventoryCondition(parsed.filters, mode);
+  const requested = parsed.filters.condition;
+  const adjusted = requested && constrained.condition !== requested;
+  return { filters: constrained, issues: adjusted ? [...parsed.issues, "Kondisi kendaraan disesuaikan dengan inventaris dealer."] : parsed.issues };
+}
 
 export function isCatalogIndexable(raw: RawCatalogSearchParams) {
   return !Object.values(raw).some((value) => value !== undefined && value !== "");

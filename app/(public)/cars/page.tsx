@@ -3,29 +3,35 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { PageContainer } from "@/components/ui/page-container";
 import { ActiveFilters, CatalogFilterForm, CatalogPagination, SortControl } from "@/features/catalog/catalog-controls";
-import { buildCatalogUrl, isCatalogIndexable, parseCatalogFilters, type RawCatalogSearchParams } from "@/features/catalog/domain";
+import { applyInventoryMode, buildCatalogUrl, isCatalogIndexable, parseCatalogFilters, type RawCatalogSearchParams } from "@/features/catalog/domain";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { getCatalogData } from "@/server/catalog/service";
 import { legacyStorefrontContext } from "@/server/storefront/context";
+import { getDealerPresentation } from "@/server/homepage/service";
+import { inventoryCopy } from "@/features/homepage/domain";
 
 type PageProps = { searchParams: Promise<RawCatalogSearchParams> };
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const raw = await searchParams;
+  const dealer = await getDealerPresentation();
+  const copy = inventoryCopy(dealer.inventoryMode ?? "BOTH");
   const indexable = isCatalogIndexable(raw);
   return {
-    title: "Daftar Mobil Baru & Bekas",
-    description: "Jelajahi daftar mobil baru dan bekas yang tersedia serta gunakan filter untuk menemukan pilihan yang sesuai.",
+    title: `Daftar ${copy.metadata}`,
+    description: `Jelajahi daftar ${copy.metadata.toLowerCase()} yang tersedia serta gunakan filter untuk menemukan pilihan yang sesuai.`,
     alternates: { canonical: "/cars" },
-    openGraph: { type: "website", title: "Daftar Mobil Baru & Bekas", description: "Jelajahi mobil baru dan bekas yang tersedia.", url: "/cars" },
+    openGraph: { type: "website", title: `Daftar ${copy.metadata}`, description: copy.description, url: "/cars" },
     robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
   };
 }
 
 export default async function CarsPage({ searchParams }: PageProps) {
   await connection();
-  const parsed = parseCatalogFilters(await searchParams);
-  const data = await getCatalogData(legacyStorefrontContext, parsed);
+  const dealer = await getDealerPresentation();
+  const inventoryMode = dealer.inventoryMode ?? "BOTH";
+  const parsed = applyInventoryMode(parseCatalogFilters(await searchParams), inventoryMode);
+  const data = await getCatalogData(legacyStorefrontContext, parsed, inventoryMode);
   const title = parsed.filters.condition === "NEW" ? "Mobil Baru" : parsed.filters.condition === "USED" ? "Mobil Bekas" : "Daftar Mobil";
 
   return (
@@ -43,7 +49,7 @@ export default async function CarsPage({ searchParams }: PageProps) {
       <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="self-start rounded-lg border border-[#E5E5E5] bg-[#F6F6F6] p-5 lg:sticky lg:top-24">
           <h2 className="mb-5 text-lg font-bold text-[#171717]">Filter Mobil</h2>
-          <CatalogFilterForm brands={data.brands} filters={parsed.filters} transmissions={data.transmissions} />
+          <CatalogFilterForm brands={data.brands} filters={parsed.filters} transmissions={data.transmissions} inventoryMode={inventoryMode} />
         </aside>
 
         <section aria-labelledby="catalog-results" className="min-w-0">

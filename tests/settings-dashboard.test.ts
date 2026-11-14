@@ -23,6 +23,9 @@ describe("DealerSettings validation", () => {
   });
   it("keeps centralized public fallback behavior", () => {
     expect(mergeDealerPresentation(null).dealerName).toBe("Dynicty Automotive");
+    expect(mergeDealerPresentation(dealerSettingsSchema.parse(valid)).inventoryMode).toBe("BOTH");
+    expect(dealerSettingsSchema.safeParse({ ...valid, inventoryMode: "USED_ONLY" }).success).toBe(true);
+    expect(dealerSettingsSchema.safeParse({ ...valid, inventoryMode: "USED" }).success).toBe(false);
   });
 });
 

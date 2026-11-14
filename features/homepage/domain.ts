@@ -2,6 +2,7 @@ export const HOMEPAGE_CAR_LIMIT = 6;
 
 export type PublicCarStatus = "DRAFT" | "AVAILABLE" | "SOLD";
 export type PublicCarCondition = "NEW" | "USED";
+export type InventoryMode = "BOTH" | "USED_ONLY" | "NEW_ONLY";
 
 export type DealerPresentation = {
   dealerName: string;
@@ -18,6 +19,7 @@ export type DealerPresentation = {
   facebookUrl: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
+  inventoryMode?: InventoryMode;
 };
 
 export const dealerFallback: DealerPresentation = {
@@ -35,7 +37,23 @@ export const dealerFallback: DealerPresentation = {
   facebookUrl: null,
   primaryColor: null,
   secondaryColor: null,
+  inventoryMode: "BOTH",
 };
+
+export function inventoryCondition(mode: InventoryMode): PublicCarCondition | undefined {
+  return mode === "USED_ONLY" ? "USED" : mode === "NEW_ONLY" ? "NEW" : undefined;
+}
+
+export function inventoryCopy(mode: InventoryMode) {
+  if (mode === "USED_ONLY") return { label: "Mobil Bekas", description: "Temukan mobil bekas berkualitas pilihan kami.", metadata: "Mobil Bekas" };
+  if (mode === "NEW_ONLY") return { label: "Mobil Baru", description: "Temukan mobil baru pilihan yang tersedia dari dealer kami.", metadata: "Mobil Baru" };
+  return { label: "Mobil Baru & Bekas", description: "Temukan kendaraan pilihan yang sesuai dengan kebutuhan Anda.", metadata: "Mobil Baru & Bekas" };
+}
+
+export function constrainInventoryCondition<T extends { condition?: PublicCarCondition }>(filters: T, mode: InventoryMode): T {
+  const condition = inventoryCondition(mode);
+  return condition ? { ...filters, condition } : filters;
+}
 
 export function isHomepageCarVisible(status: PublicCarStatus) {
   return status === "AVAILABLE";
@@ -129,5 +147,6 @@ export function mergeDealerPresentation(
     facebookUrl: clean(settings?.facebookUrl),
     primaryColor: clean(settings?.primaryColor),
     secondaryColor: clean(settings?.secondaryColor),
+    inventoryMode: settings?.inventoryMode ?? dealerFallback.inventoryMode,
   };
 }

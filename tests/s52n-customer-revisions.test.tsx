@@ -6,8 +6,9 @@ import { FloatingWhatsapp } from "@/components/public/floating-whatsapp";
 import { SiteHeader } from "@/components/public/site-header";
 import { BannerCarousel } from "@/features/content/banner-carousel";
 import { canActivateAdvantage, visibleItems, type PublicContentItem } from "@/features/content/domain";
-import { createWhatsappUrl, formatStockUpdateDate, type DealerPresentation } from "@/features/homepage/domain";
-import { DEFAULT_STOREFRONT_HEADER, storefrontHeaderColor } from "@/features/theme/domain";
+import { applyInventoryMode } from "@/features/catalog/domain";
+import { createWhatsappUrl, formatStockUpdateDate, inventoryCopy, type DealerPresentation } from "@/features/homepage/domain";
+import { AUTO18_STOREFRONT_GRADIENT, DEFAULT_STOREFRONT_HEADER, storefrontHeaderBackground, storefrontHeaderColor } from "@/features/theme/domain";
 
 const dealer: DealerPresentation = { dealerName:"Dealer Uji",logoUrl:null,faviconUrl:null,whatsappNumber:"0812 3456 7890",whatsappWidgetEnabled:true,whatsappWidgetMessage:"Halo & info",phone:null,email:null,address:null,googleMapsUrl:null,instagramUrl:null,facebookUrl:null,primaryColor:"#6F1018",secondaryColor:null };
 const slide: PublicContentItem = { id:"promo",kind:"PROMO_BANNER",title:"Promo resmi",body:"",link:"/cars",active:true,sortOrder:0,mediaUrl:"/uploads/promo.webp" };
@@ -17,22 +18,28 @@ describe("S5.2N approved customer revisions",()=>{
     expect(createWhatsappUrl("0812 3456 7890","Halo & info")).toBe("https://wa.me/6281234567890?text=Halo%20%26%20info");
     expect(createWhatsappUrl("javascript:alert(1)")).toBeNull();
   });
-  it("uses a contrast-safe dealer header color and WhatsApp green CTA",()=>{
+  it("uses a dealer-scoped header surface and the approved WhatsApp gradient",()=>{
     expect(storefrontHeaderColor("#6F1018")).toBe("#6F1018");
     expect(storefrontHeaderColor("#FFEEEE")).toBe(DEFAULT_STOREFRONT_HEADER);
-    const html=renderToStaticMarkup(<SiteHeader dealer={dealer}/>);
-    expect(html).toContain("background-color:#6F1018");expect(html).toContain("bg-[#25D366]");expect(html).toContain("text-white");
+    expect(storefrontHeaderBackground("#C8102E")).toBe(AUTO18_STOREFRONT_GRADIENT);
+    const html=renderToStaticMarkup(<SiteHeader dealer={{...dealer,primaryColor:"#C8102E"}}/>);
+    expect(html).toContain("linear-gradient(110deg, #650B16 0%, #990015 55%, #C90016 100%)");expect(html).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");expect(html).toContain("text-white");
   });
   it("renders the floating widget only with an enabled valid dealer number",()=>{
     const html=renderToStaticMarkup(<FloatingWhatsapp dealer={dealer}/>);
-    expect(html).toContain("bottom-[max(5rem");expect(html).toContain("h-12");expect(html).toContain("Halo%20%26%20info");
+    expect(html).toContain("bottom-[calc(20px+env(safe-area-inset-bottom))]");expect(html).toContain("h-12");expect(html).toContain("Halo%20%26%20info");
     expect(renderToStaticMarkup(<FloatingWhatsapp dealer={{...dealer,whatsappWidgetEnabled:false}}/>)).toBe("");
     expect(renderToStaticMarkup(<FloatingWhatsapp dealer={{...dealer,whatsappNumber:"invalid"}}/>)).toBe("");
   });
   it("keeps hero copy below the image on mobile and preserves the desktop overlay",()=>{
     const hero={...slide,kind:"MAIN_BANNER" as const};
     const html=renderToStaticMarkup(<BannerCarousel slides={[hero]} headline="Judul dealer" description="Deskripsi dealer"/>);
-    expect(html).toContain("hidden bg-gradient-to-t");expect(html).toContain("sm:block");expect(html).toContain("bg-white px-5 py-6");expect(html).toContain("object-contain sm:object-cover");
+    expect(html).toContain("hidden bg-gradient-to-t");expect(html).toContain("sm:block");expect(html).toContain("bg-white px-5 py-6");expect(html).toContain("object-contain sm:object-cover");expect(html).toContain("aspect-[var(--mobile-banner-ratio)]");
+  });
+  it("constrains used-only dealers without changing the default multi-dealer behavior",()=>{
+    expect(applyInventoryMode({filters:{condition:"NEW",sort:"newest",page:1},issues:[]},"USED_ONLY").filters.condition).toBe("USED");
+    expect(applyInventoryMode({filters:{condition:"NEW",sort:"newest",page:1},issues:[]},"BOTH").filters.condition).toBe("NEW");
+    expect(inventoryCopy("USED_ONLY").description).toContain("mobil bekas");
   });
   it("renders a linked portrait promo slider without stretching artwork",()=>{
     const html=renderToStaticMarkup(<BannerCarousel slides={[slide,{...slide,id:"promo-2"}]} portrait linkSlides/>);

@@ -18,6 +18,12 @@ enum CarStatus {
   SOLD
 }
 
+enum InventoryMode {
+  BOTH
+  USED_ONLY
+  NEW_ONLY
+}
+
 model AdminUser {
   id           String         @id @default(cuid())
   email        String         @unique
@@ -202,6 +208,7 @@ model DealerSettings {
   facebookUrl       String?
   primaryColor      String?
   secondaryColor    String?
+  inventoryMode     InventoryMode       @default(BOTH)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   dealerId          String?             @unique

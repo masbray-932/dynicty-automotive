@@ -24,10 +24,11 @@ export async function upsertDealerSettings(input: unknown) {
     throw new TypeError("Invalid operational dealer settings payload.");
   }
 
-  const { dealerName, phone, whatsappNumber, whatsappWidgetEnabled, whatsappWidgetMessage, email, address, googleMapsUrl, instagramUrl, facebookUrl } =
+  const { dealerName, phone, whatsappNumber, whatsappWidgetEnabled, whatsappWidgetMessage, email, address, googleMapsUrl, instagramUrl, facebookUrl, inventoryMode } =
     dealerSettingsSchema.parse(input);
   // Keep create and update limited to operational data, even if the schema changes later.
   const data = { dealerName, phone, whatsappNumber, email, address, googleMapsUrl, instagramUrl, facebookUrl,
+    ...(Object.hasOwn(input, "inventoryMode") ? { inventoryMode } : {}),
     ...(Object.hasOwn(input, "whatsappWidgetEnabled") ? { whatsappWidgetEnabled } : {}),
     ...(Object.hasOwn(input, "whatsappWidgetMessage") ? { whatsappWidgetMessage } : {}),
   };

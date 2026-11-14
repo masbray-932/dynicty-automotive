@@ -1,18 +1,21 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { WhatsAppIcon } from "./whatsapp-icon";
 
-const sharedClass = "inline-flex items-center justify-center gap-2 font-bold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]";
-export const whatsappButtonClass = `${sharedClass} min-h-11 rounded-md border border-[#1EBE5A] bg-[#25D366] px-4 text-sm text-[#063D20] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] hover:border-[#19A94E] hover:bg-[#20C760]`;
+export const whatsappButtonClass = "inline-flex min-h-[54px] items-stretch overflow-hidden rounded-[10px] border border-white/10 bg-[linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)] text-[16px] font-bold leading-tight text-white no-underline shadow-[0_5px_12px_rgba(5,104,47,0.16),inset_0_1px_0_rgba(255,255,255,0.16)] transition-[filter,box-shadow,transform] duration-200 hover:-translate-y-px hover:brightness-[1.06] hover:shadow-[0_7px_15px_rgba(5,104,47,0.22)] active:translate-y-0 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-[3px] focus-visible:outline-[#163eac] motion-reduce:transition-none motion-reduce:hover:translate-y-0 max-[420px]:text-[15px]";
 
 const whatsappVariants = {
   default: whatsappButtonClass,
-  header: `${sharedClass} min-h-10 rounded-md border border-[#41DF7C] bg-[#25D366] px-4 text-xs uppercase tracking-[0.08em] text-[#063D20] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] hover:bg-[#39DA73]`,
-  menu: `${sharedClass} min-h-11 w-full justify-start rounded-md border border-[#25D366]/35 bg-[#25D366]/10 px-3 text-sm text-[#DDFBE8] hover:border-[#25D366]/55 hover:bg-[#25D366]/15`,
-  floating: `${sharedClass} h-12 min-h-12 w-12 rounded-full border border-[#1EBE5A] bg-[#25D366] p-0 text-[#063D20] shadow-[0_6px_18px_rgba(6,61,32,0.22)] hover:bg-[#20C760] hover:shadow-[0_8px_22px_rgba(6,61,32,0.28)]`,
+  header: whatsappButtonClass,
+  menu: `${whatsappButtonClass} w-full`,
+  floating: "inline-flex h-12 w-12 items-center justify-center rounded-[15px] border border-white/30 bg-[linear-gradient(145deg,#1BAA55_0%,#108A45_100%)] p-0 text-white shadow-[0_3px_12px_rgba(0,0,0,0.13),0_1px_2px_rgba(0,0,0,0.07)] transition-[background,box-shadow,transform] duration-200 hover:-translate-y-px hover:bg-[linear-gradient(145deg,#169C4D_0%,#087A3A_100%)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.16)] active:translate-y-0 active:shadow-[0_2px_7px_rgba(0,0,0,0.12)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-[3px] focus-visible:outline-[#111] motion-reduce:transition-none motion-reduce:hover:translate-y-0 max-[600px]:h-[46px] max-[600px]:w-[46px] max-[600px]:rounded-[14px]",
 } as const;
 
 export type WhatsAppLinkVariant = keyof typeof whatsappVariants;
 
+export function WhatsAppButtonContent({ children }: { children: ReactNode }) {
+  return <><span aria-hidden="true" className="grid flex-[0_0_54px] place-items-center border-r border-white/10 bg-white/10"><WhatsAppIcon /></span><span className="flex items-center whitespace-nowrap px-5 max-[420px]:px-[15px]">{children}</span></>;
+}
+
 export function WhatsAppLink({ children, className = "", variant = "default", ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { children: ReactNode; variant?: WhatsAppLinkVariant }) {
-  return <a {...props} className={`${whatsappVariants[variant]} ${className}`} rel="noopener noreferrer" target="_blank"><WhatsAppIcon className={variant === "floating" ? "h-6 w-6" : "h-5 w-5"} />{children}</a>;
+  return <a {...props} className={`${whatsappVariants[variant]} ${className}`} rel="noopener noreferrer" target="_blank">{variant === "floating" ? <><WhatsAppIcon className="h-[26px] w-[26px] max-[600px]:h-[25px] max-[600px]:w-[25px]" filled />{children}</> : <WhatsAppButtonContent>{children}</WhatsAppButtonContent>}</a>;
 }

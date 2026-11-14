@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { HomepageBrand } from "@/server/homepage/service";
+import { inventoryCondition, type InventoryMode } from "./domain";
 
-export function QuickSearch({ brands }: { brands: HomepageBrand[] }) {
+export function QuickSearch({ brands, inventoryMode = "BOTH" }: { brands: HomepageBrand[]; inventoryMode?: InventoryMode }) {
   const [brand, setBrand] = useState("");
   const models = useMemo(() => brands.find((item) => item.slug === brand)?.models ?? [], [brand, brands]);
 
@@ -11,10 +12,10 @@ export function QuickSearch({ brands }: { brands: HomepageBrand[] }) {
     <form action="/cars" className="grid gap-4 rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-[0_12px_32px_-16px_rgba(23,23,23,0.18)] sm:grid-cols-2 lg:grid-cols-3" method="get">
       <label className="grid gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#606060]">
         Kondisi
-        <select className="public-control px-3 text-sm font-normal normal-case" name="condition" defaultValue="">
-          <option value="">Semua kondisi</option>
-          <option value="NEW">Mobil baru</option>
-          <option value="USED">Mobil bekas</option>
+        <select className="public-control px-3 text-sm font-normal normal-case" name="condition" defaultValue={inventoryCondition(inventoryMode) ?? ""}>
+          {inventoryMode === "BOTH" ? <option value="">Semua kondisi</option> : null}
+          {inventoryMode !== "USED_ONLY" ? <option value="NEW">Mobil baru</option> : null}
+          {inventoryMode !== "NEW_ONLY" ? <option value="USED">Mobil bekas</option> : null}
         </select>
       </label>
       <label className="grid gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#606060]">

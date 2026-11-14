@@ -6,7 +6,7 @@ import { FloatingWhatsapp } from "@/components/public/floating-whatsapp";
 import { SiteHeader } from "@/components/public/site-header";
 import { WhatsAppLink } from "@/components/public/whatsapp-link";
 import type { DealerPresentation } from "@/features/homepage/domain";
-import { DEFAULT_STOREFRONT_HEADER, STOREFRONT_MOBILE_NAV, contrastRatio, storefrontHeaderColor } from "@/features/theme/domain";
+import { AUTO18_STOREFRONT_GRADIENT, DEFAULT_STOREFRONT_HEADER, contrastRatio, storefrontHeaderBackground, storefrontHeaderColor } from "@/features/theme/domain";
 
 const dealer: DealerPresentation = { dealerName:"Dealer Premium",logoUrl:null,faviconUrl:null,whatsappNumber:"081234567890",whatsappWidgetEnabled:true,whatsappWidgetMessage:"Halo",phone:null,email:null,address:null,googleMapsUrl:null,instagramUrl:null,facebookUrl:null,primaryColor:"#C8102E",secondaryColor:null };
 
@@ -18,23 +18,26 @@ describe("S5.2N premium public contact treatment",()=>{
     expect(storefrontHeaderColor("#FFEEEE")).toBe(DEFAULT_STOREFRONT_HEADER);
   });
 
-  it("uses a viewport-safe charcoal mobile menu and contextual WhatsApp action",()=>{
+  it("uses the approved gradient consistently in a viewport-safe mobile menu",()=>{
     const html=renderToStaticMarkup(<SiteHeader dealer={dealer}/>);
-    expect(html).toContain(`background-color:${STOREFRONT_MOBILE_NAV}`);
+    expect(storefrontHeaderBackground(dealer.primaryColor)).toBe(AUTO18_STOREFRONT_GRADIENT);
+    expect(html.match(/linear-gradient\(110deg/g)?.length).toBeGreaterThanOrEqual(2);
     expect(html).toContain("w-[min(18rem,calc(100vw-2rem))]");
     expect(html).toContain("max-h-[calc(100dvh-5.5rem)]");
-    expect(html).toContain("bg-[#25D366]/10");
+    expect(html).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");
     expect(html).toContain('aria-label="Navigasi seluler"');
   });
 
   it("keeps ordinary and floating WhatsApp controls recognizable but proportionate",()=>{
     const standard=renderToStaticMarkup(<WhatsAppLink href="https://wa.me/6281234567890">Chat WhatsApp</WhatsAppLink>);
     const floating=renderToStaticMarkup(<FloatingWhatsapp dealer={dealer}/>);
-    expect(standard).toContain("bg-[#25D366]");
-    expect(standard).toContain("rounded-md");
+    expect(standard).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");
+    expect(standard).toContain("rounded-[10px]");
+    expect(standard).toContain("flex-[0_0_54px]");
     expect(floating).toContain("h-12");
     expect(floating).toContain("w-12");
-    expect(floating).toContain("shadow-[0_6px_18px");
+    expect(floating).toContain("linear-gradient(145deg,#1BAA55_0%,#108A45_100%)");
+    expect(floating).toContain("shadow-[0_3px_12px");
     expect(floating).toContain('aria-label="Chat dengan Dealer Premium melalui WhatsApp"');
   });
 });

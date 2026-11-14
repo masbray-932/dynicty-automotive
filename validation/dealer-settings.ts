@@ -18,6 +18,7 @@ export const dealerSettingsSchema = z.strictObject({
   googleMapsUrl: optionalUrl,
   instagramUrl: optionalUrl,
   facebookUrl: optionalUrl,
+  inventoryMode: z.enum(["BOTH", "USED_ONLY", "NEW_ONLY"]).optional(),
 });
 
 export type DealerSettingsValues = z.infer<typeof dealerSettingsSchema>;

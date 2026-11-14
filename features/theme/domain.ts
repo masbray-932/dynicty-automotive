@@ -55,6 +55,7 @@ export function readableForeground(background: string): "#000000" | "#FFFFFF" {
 
 export const DEFAULT_STOREFRONT_HEADER = "#671B27";
 export const STOREFRONT_MOBILE_NAV = "#19201F";
+export const AUTO18_STOREFRONT_GRADIENT = "linear-gradient(110deg, #650B16 0%, #990015 55%, #C90016 100%)";
 
 function mixThemeColors(foreground: string, background: string, foregroundWeight: number) {
   const foregroundColor = normalizeThemeColor(foreground);
@@ -76,6 +77,15 @@ export function storefrontHeaderColor(primary: string | null | undefined) {
   return contrastRatio(candidate, "#FFFFFF") >= 8
     ? candidate
     : mixThemeColors(candidate, STOREFRONT_MOBILE_NAV, 0.48);
+}
+
+export function storefrontHeaderBackground(primary: string | null | undefined) {
+  const candidate = normalizeThemeColor(primary);
+  // The approved gradient is selected by the dealer's existing brand token;
+  // other tenants retain their independently derived header color.
+  return candidate === "#C8102E"
+    ? AUTO18_STOREFRONT_GRADIENT
+    : storefrontHeaderColor(candidate);
 }
 
 export function resolveAutomotiveTheme(overrides: unknown = null) {

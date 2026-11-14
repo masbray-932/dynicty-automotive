@@ -35,7 +35,7 @@ export async function saveDealerSettingsAction(_state: ActionState, formData: Fo
     seen.add(key);
   }
   const parsed = dealerSettingsSchema.safeParse(
-    Object.fromEntries(dealerSettingsFields.map((key) => [key, key === "whatsappWidgetEnabled" ? formData.get(key) === "on" : formData.get(key) ?? ""])),
+    Object.fromEntries(dealerSettingsFields.map((key) => [key, key === "whatsappWidgetEnabled" ? formData.get(key) === "on" : key === "inventoryMode" && !formData.has(key) ? undefined : formData.get(key) ?? ""])),
   );
   if (!parsed.success) return actionResult("error", "Periksa kembali pengaturan dealer.", parsed.error.flatten().fieldErrors);
   try { await upsertDealerSettings(parsed.data); }
