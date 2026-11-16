@@ -48,7 +48,7 @@ async function lockOwner(tx: Prisma.TransactionClient, dealerId: typeof LEGACY_D
 export async function saveDealerContentAction(_state: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();
   const { dealerId } = LEGACY_DEALER_SCOPE;
-  const fields = ["welcomeTitle","welcomeBody","aboutSummary","aboutStory","showroomAlt","operatingHours","history","vision","mission","achievements"];
+  const fields = ["welcomeTitle","welcomeBody","welcomeHeadingDesktopPx","welcomeHeadingMobilePx","welcomeBodyDesktopPx","welcomeBodyMobilePx","aboutSummary","aboutStory","showroomAlt","operatingHours","history","vision","mission","achievements"];
   const parsed = dealerContentSchema.safeParse({...Object.fromEntries(fields.map(key=>[key,form.get(key) ?? ""])),welcomeActive:form.get("welcomeActive")==="on",aboutActive:form.get("aboutActive")==="on",operatingHoursActive:form.get("operatingHoursActive")==="on"});
   if (!parsed.success) return actionResult("error","Periksa konten dealer.",parsed.error.flatten().fieldErrors);
   let uploaded: string | null = null;

@@ -253,6 +253,10 @@ model DealerContent {
   welcomeTitle         String         @default("")
   welcomeBody          String         @default("") @db.Text
   welcomeActive        Boolean        @default(false)
+  welcomeHeadingDesktopPx Int?
+  welcomeHeadingMobilePx  Int?
+  welcomeBodyDesktopPx    Int?
+  welcomeBodyMobilePx     Int?
   aboutSummary         String         @default("") @db.Text
   aboutStory           String         @default("") @db.Text
   history              String         @default("") @db.Text

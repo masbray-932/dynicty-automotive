@@ -36,10 +36,11 @@ describe("S5.2N premium public contact treatment",()=>{
     expect(standard).toContain("linear-gradient(105deg,#20c85a_0%,#0b9f40_55%,#087d32_100%)");
     expect(standard).toContain("rounded-[10px]");
     expect(standard).toContain("flex-[0_0_54px]");
-    expect(floating).toContain("h-12");
-    expect(floating).toContain("w-12");
-    expect(floating).toContain("linear-gradient(145deg,#1BAA55_0%,#108A45_100%)");
-    expect(floating).toContain("shadow-[0_3px_12px");
-    expect(floating).toContain('aria-label="Chat dengan Dealer Premium melalui WhatsApp"');
+    expect(floating).toContain("min-h-[58px]");
+    expect(floating).toContain("w-[58px]");
+    expect(floating).toContain("linear-gradient(145deg,#20C85A_0%,#0E9B43_100%)");
+    expect(floating).toContain("shadow-[0_5px_18px");
+    expect(floating).toContain("Hubungi Sales Kami");
+    expect(floating).toContain('aria-label="Hubungi sales Dealer Premium melalui WhatsApp"');
   });
 });

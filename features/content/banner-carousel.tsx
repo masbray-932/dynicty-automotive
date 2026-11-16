@@ -11,10 +11,11 @@ function BannerImage({slide, eager, mobileContain=false, forceContain=false, onN
   const remote = shouldBypassImageOptimization(slide.mediaUrl);
   return <>
     {fit === "contain" || mobileContain || forceContain ? <Image alt="" aria-hidden="true" src={slide.mediaUrl} fill sizes="100vw" unoptimized={remote} className={`${mobileContain ? "hidden sm:block" : ""} scale-110 object-cover blur-xl brightness-50`} /> : null}
-    <Image alt={slide.title} src={slide.mediaUrl} fill sizes="100vw" priority={eager} unoptimized={remote} className={forceContain || fit === "contain" ? "object-contain" : mobileContain ? "object-contain sm:object-cover" : "object-cover"} onLoad={event=>{const {naturalWidth,naturalHeight}=event.currentTarget;setFit(bannerFit(naturalWidth,naturalHeight));if(naturalWidth>0&&naturalHeight>0)onNaturalRatio?.(naturalWidth/naturalHeight);}} onError={()=>setFailed(true)} />
+    <Image alt={slide.title} src={slide.mediaUrl} fill sizes="100vw" priority={eager} unoptimized={remote} className={forceContain || fit === "contain" || mobileContain ? "object-contain" : "object-cover"} onLoad={event=>{const {naturalWidth,naturalHeight}=event.currentTarget;setFit(bannerFit(naturalWidth,naturalHeight));if(naturalWidth>0&&naturalHeight>0)onNaturalRatio?.(naturalWidth/naturalHeight);}} onError={()=>setFailed(true)} />
   </>;
 }
-export function BannerCarousel({slides, label="Banner utama", previewWidth, priority=false, headline, description, compact=false, portrait=false, linkSlides=false}: {slides:PublicContentItem[];label?:string;previewWidth?:number;priority?:boolean;headline?:string;description?:string;compact?:boolean;portrait?:boolean;linkSlides?:boolean}) {
+type WelcomeTypography = { headingDesktopPx?:number|null; headingMobilePx?:number|null; bodyDesktopPx?:number|null; bodyMobilePx?:number|null };
+export function BannerCarousel({slides, label="Banner utama", previewWidth, priority=false, headline, description, welcomeTypography, compact=false, portrait=false, linkSlides=false}: {slides:PublicContentItem[];label?:string;previewWidth?:number;priority?:boolean;headline?:string;description?:string;welcomeTypography?:WelcomeTypography;compact?:boolean;portrait?:boolean;linkSlides?:boolean}) {
   const [index,setIndex] = useState(0);
   const [paused,setPaused] = useState(false);
   const [stopped,setStopped] = useState(false);
@@ -41,7 +42,7 @@ export function BannerCarousel({slides, label="Banner utama", previewWidth, prio
   },[count,paused,stopped,hidden,reduced]);
   if(!count) return null;
   const sectionStyle = previewWidth ? {aspectRatio:bannerRatio(previewWidth),height:"auto"} : !portrait && !compact ? {"--mobile-banner-ratio":String(mobileRatio)} as CSSProperties : undefined;
-  return <><section aria-label={label} aria-roledescription="carousel" tabIndex={count>1?0:undefined} className={`relative w-full overflow-hidden bg-[#111111] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white ${portrait ? "aspect-[4/5] lg:aspect-[3/4]" : compact ? "aspect-[2/1] xl:aspect-[21/9]" : "aspect-[var(--mobile-banner-ratio)] h-auto sm:aspect-auto sm:h-[clamp(26.25rem,36vw,32.5rem)]"}`} style={sectionStyle}
+  return <><section aria-label={label} aria-roledescription="carousel" tabIndex={count>1?0:undefined} className={`relative w-full overflow-hidden bg-[#111111] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white ${portrait ? "aspect-[4/5] lg:aspect-[3/4]" : compact ? "aspect-[2/1] xl:aspect-[21/9]" : "aspect-[var(--mobile-banner-ratio)] h-auto sm:aspect-auto sm:h-[clamp(20rem,42vw,26.25rem)] lg:h-[clamp(26.25rem,41vw,32.5rem)]"}`} style={sectionStyle}
     onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onFocusCapture={()=>setPaused(true)} onBlurCapture={event=>{if(!event.currentTarget.contains(event.relatedTarget))setPaused(false);}}
     onKeyDown={event=>{if(event.key==="ArrowLeft" || event.key==="ArrowRight"){event.preventDefault();go(current+(event.key==="ArrowRight"?1:-1));}}}
     onTouchStart={event=>{start.current={x:event.touches[0].clientX,y:event.touches[0].clientY};swiped.current=false;}}
@@ -52,7 +53,7 @@ export function BannerCarousel({slides, label="Banner utama", previewWidth, prio
         {linkSlides && slide.link ? <a aria-label={`Buka ${slide.title}`} className="block h-full focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white" href={slide.link} {...(slide.link.startsWith("https:")?{target:"_blank",rel:"noopener noreferrer"}:{})}><BannerImage slide={slide} eager={priority && i===0} forceContain={portrait} /></a> : <BannerImage slide={slide} eager={priority && i===0} mobileContain={!compact} forceContain={portrait} onNaturalRatio={i===0?setMobileRatio:undefined} />}
       </div>)}
     </div>
-    {headline ? <div className="pointer-events-none absolute inset-0 hidden items-center bg-gradient-to-r from-black/75 via-black/30 to-transparent px-[7vw] py-16 text-left text-white sm:flex"><div className="w-full max-w-7xl"><h2 className="max-w-3xl text-4xl font-bold tracking-tight lg:text-5xl xl:text-6xl">{headline}</h2>{description ? <p className="mt-4 max-w-2xl text-base leading-7 text-white/90">{description}</p> : null}</div></div> : null}
+    {headline ? <div className="pointer-events-none absolute inset-0 hidden items-center bg-gradient-to-r from-black/75 via-black/30 to-transparent px-[7vw] py-16 text-left text-white sm:flex"><div className="w-full max-w-7xl"><h2 className="max-w-3xl break-words text-4xl font-bold tracking-tight lg:text-5xl xl:text-6xl" style={{fontSize:welcomeTypography?.headingDesktopPx??undefined}}>{headline}</h2>{description ? <p className="mt-4 max-w-2xl break-words text-base leading-7 text-white/90" style={{fontSize:welcomeTypography?.bodyDesktopPx??undefined}}>{description}</p> : null}</div></div> : null}
     {count>1 ? <>
       <button type="button" aria-label="Banner sebelumnya" onClick={()=>go(current-1)} className="absolute left-3 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-sm border border-white/40 bg-black/55 text-2xl text-white backdrop-blur focus-visible:outline-2 focus-visible:outline-white sm:left-6">‹</button>
       <button type="button" aria-label="Banner berikutnya" onClick={()=>go(current+1)} className="absolute right-3 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-sm border border-white/40 bg-black/55 text-2xl text-white backdrop-blur focus-visible:outline-2 focus-visible:outline-white sm:right-6">›</button>
@@ -61,5 +62,5 @@ export function BannerCarousel({slides, label="Banner utama", previewWidth, prio
         <button type="button" aria-label={stopped?"Jalankan pergantian otomatis":"Jeda pergantian otomatis"} aria-pressed={stopped} onClick={()=>setStopped(value=>!value)} className="min-h-11 min-w-11 rounded-full text-white focus-visible:outline-2 focus-visible:outline-white">{stopped?"▶":"Ⅱ"}</button>
       </div>
     </> : null}
-  </section>{headline && !compact && !portrait ? <div className="bg-white px-5 py-6 text-[#171717] sm:hidden"><h2 className="text-3xl font-bold tracking-tight">{headline}</h2>{description ? <p className="mt-3 leading-7 text-[#606060]">{description}</p> : null}</div> : null}</>;
+  </section>{headline && !compact && !portrait ? <div className="bg-white px-5 py-6 text-[#171717] sm:hidden"><h2 className="break-words text-3xl font-bold tracking-tight" style={{fontSize:welcomeTypography?.headingMobilePx??undefined}}>{headline}</h2>{description ? <p className="mt-3 break-words leading-7 text-[#606060]" style={{fontSize:welcomeTypography?.bodyMobilePx??undefined}}>{description}</p> : null}</div> : null}</>;
 }

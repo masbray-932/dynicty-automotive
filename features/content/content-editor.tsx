@@ -16,15 +16,36 @@ const input = "w-full min-h-11 rounded-lg border border-white/20 bg-zinc-950 px-
 const button = "min-h-11 rounded-lg bg-brand-primary px-5 py-2 font-bold text-brand-on-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-brand-focus";
 function Status({message,errors}:{message:string;errors:Record<string,string[]|undefined>}) {return <div role="status" className="text-sm text-zinc-200"><p>{message}</p>{Object.entries(errors).map(([field,list])=>list?.length?<p key={field}>{list.join(" ")}</p>:null)}</div>;}
 function Field({label,name,value="",multiline=false,max=200,error,type="text",min,maxValue}:{label:string;name:string;value?:string;multiline?:boolean;max?:number;error?:string;type?:"text"|"number";min?:number;maxValue?:number}) {const id=useId();const [draft,setDraft]=useState(value);return <FormField error={error} htmlFor={id} label={label}>{multiline?<textarea className={`${input} min-h-28`} name={name} value={draft} onChange={event=>setDraft(event.target.value)} maxLength={max} />:<input className={input} name={name} value={draft} onChange={event=>setDraft(event.target.value)} maxLength={type==="text"?max:undefined} max={maxValue} min={min} type={type} />}</FormField>;}
+type TypographyField = "welcomeHeadingDesktopPx"|"welcomeHeadingMobilePx"|"welcomeBodyDesktopPx"|"welcomeBodyMobilePx";
+const typographyControls = [
+  ["welcomeHeadingDesktopPx","Judul desktop",32,72],
+  ["welcomeHeadingMobilePx","Judul mobile",24,48],
+  ["welcomeBodyDesktopPx","Deskripsi desktop",14,24],
+  ["welcomeBodyMobilePx","Deskripsi mobile",14,22],
+] as const;
+function WelcomeTypographyControls({profile,errors}:{profile:DealerContent|null;errors:Record<string,string[]|undefined>}) {
+  const initial = Object.fromEntries(typographyControls.map(([name])=>[name,profile?.[name]?.toString()??""])) as Record<TypographyField,string>;
+  const [values,setValues]=useState(initial);
+  const px=(name:TypographyField)=>{const value=Number(values[name]);return values[name]&&Number.isFinite(value)?value:undefined;};
+  return <div className="grid gap-4 rounded-xl border border-white/10 bg-black/15 p-4">
+    <div><h3 className="font-bold text-white">Tipografi Sambutan</h3><p className="mt-1 text-sm leading-6 text-zinc-400">Kosongkan ukuran untuk memakai tampilan bawaan. Nilai dibatasi agar tetap nyaman dibaca di setiap perangkat.</p></div>
+    <div className="grid gap-4 sm:grid-cols-2">{typographyControls.map(([name,label,min,max])=><FormField error={errors[name]?.[0]} htmlFor={name} key={name} label={`${label} (${min}–${max}px)`}><input className={input} id={name} inputMode="numeric" max={max} min={min} name={name} placeholder="Bawaan" step={1} type="number" value={values[name]} onChange={event=>setValues(current=>({...current,[name]:event.target.value}))} /></FormField>)}</div>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.45fr)]">
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-950 p-5"><p className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Preview desktop</p><h4 className="break-words font-bold leading-tight text-white" style={{fontSize:px("welcomeHeadingDesktopPx")}}>{profile?.welcomeTitle||"Sambutan Dealer"}</h4><p className="mt-3 break-words leading-7 text-zinc-300" style={{fontSize:px("welcomeBodyDesktopPx")}}>{profile?.welcomeBody||"Deskripsi sambutan dealer akan terlihat seperti ini."}</p></div>
+      <div className="mx-auto w-full max-w-sm overflow-hidden rounded-xl border border-white/10 bg-white p-4 text-zinc-950"><p className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Preview mobile</p><h4 className="break-words font-bold leading-tight" style={{fontSize:px("welcomeHeadingMobilePx")}}>{profile?.welcomeTitle||"Sambutan Dealer"}</h4><p className="mt-3 break-words leading-7 text-zinc-600" style={{fontSize:px("welcomeBodyMobilePx")}}>{profile?.welcomeBody||"Deskripsi sambutan dealer akan terlihat seperti ini."}</p></div>
+    </div>
+  </div>;
+}
 export function ProfileEditor({profile,showroomUrl}:{profile:DealerContent|null;showroomUrl?:string|null}) {
   const notify=useCmsFeedback();
   const [state,action,pending]=useFeedbackAction(saveDealerContentAction,notify);
   const showroomId=useId();
   return <ConfirmationForm action={action} confirmation={data => profileConfirmation(profile, data)} className="grid gap-5 rounded-2xl border border-white/10 bg-zinc-900 p-4 sm:p-6">
-    <fieldset className="grid gap-4 rounded-xl border border-white/10 p-4"><legend className="px-2 text-lg font-bold">Beranda</legend>
+    <fieldset className="grid gap-4 rounded-xl border border-white/10 p-4"><legend className="px-2 text-lg font-bold">Sambutan Beranda</legend>
       <p className="text-sm text-zinc-400">Teks sambutan singkat yang tampil bersama banner utama.</p>
       <Field label="Judul sambutan" name="welcomeTitle" value={profile?.welcomeTitle} max={150} error={state.errors.welcomeTitle?.[0]} />
       <Field label="Isi sambutan" name="welcomeBody" value={profile?.welcomeBody} multiline max={2000} error={state.errors.welcomeBody?.[0]} />
+      <WelcomeTypographyControls errors={state.errors} profile={profile} />
       <ToggleLabel><DraftCheckbox name="welcomeActive" initial={profile?.welcomeActive} /> Tampilkan sambutan di beranda</ToggleLabel>
       <Field label="Ringkasan tentang kami di beranda" name="aboutSummary" value={profile?.aboutSummary} multiline max={1500} error={state.errors.aboutSummary?.[0]} />
     </fieldset>
@@ -47,6 +68,7 @@ export function ProfileEditor({profile,showroomUrl}:{profile:DealerContent|null;
 }
 function Preview({item,url}:{item:PublicContentItem;url:string|null}) {
   const [width,setWidth]=useState(390);
+  if(item.kind==="LEASING_PARTNER") return <div className="grid gap-2"><p className="text-sm font-medium text-zinc-200">Preview horizontal partner leasing</p><div className="relative aspect-[5/2] w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-white">{url?<Image alt={item.title||"Preview partner leasing"} className="object-contain p-4" fill sizes="576px" src={url} unoptimized />:<div className="grid h-full place-items-center text-sm text-zinc-500">Belum ada gambar</div>}</div></div>;
   return <div className="grid gap-2"><label className="grid gap-2">Preview perangkat<select className={input} value={width} onChange={e=>setWidth(Number(e.target.value))}><option value={390}>HP — 390px</option><option value={768}>Tablet — 768px</option><option value={1280}>Desktop — 1280px</option></select></label><div className="mx-auto w-full" style={{maxWidth:width}}><BannerCarousel slides={url?[{...item,mediaUrl:url}]:[]} previewWidth={width} label="Preview banner" /></div></div>;
 }
 export function ItemEditor({kind,item,cancelHref,sectionHeading=false}:{kind:ContentKind;item?:PublicContentItem;cancelHref:string;sectionHeading?:boolean}) {
@@ -66,7 +88,7 @@ export function ItemEditor({kind,item,cancelHref,sectionHeading=false}:{kind:Con
       <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item?.id??""} />
       <Field label={sectionHeading?"Judul bagian":kind==="TESTIMONIAL"?"Attribution — nama tampilan yang diizinkan":kind==="FAQ"?"Pertanyaan":media?"Deskripsi gambar / nama partner":"Judul"} name="title" value={item?.title??(sectionHeading?"Mengapa Memilih Kami?":undefined)} error={state.errors.title?.[0]} />
       {sectionHeading?<input type="hidden" name="body" value=""/>:!media ? <Field label={kind==="TESTIMONIAL"?"Kutipan testimoni asli (tanpa rating buatan)":kind==="FAQ"?"Jawaban":"Penjelasan faktual"} name="body" value={item?.body} multiline max={3000} error={state.errors.body?.[0]} />:<input type="hidden" name="body" value="" />}
-      {sectionHeading?<input type="hidden" name="link" value={ADVANTAGE_SECTION_TOKEN}/>:media ? <><Field label="Link opsional — /cars atau https://…" name="link" value={item?.link} max={500} error={state.errors.link?.[0]} /><MediaUploadField spec={kind==="MAIN_BANNER"?"hero":"promo"} id={imageId} required={!item} className={input} error={state.errors.image?.[0]} onFileSelect={(_,url)=>setLocalUrl(url)} /><Preview item={draft} url={localUrl ?? item?.mediaUrl??null} /></>:kind==="ADVANTAGE"?<><AdvantageIconSelect value={item?.link??""} error={state.errors.link?.[0]}/><MediaUploadField spec="advantageIcon" id={imageId} className={input} error={state.errors.image?.[0]} onFileSelect={(_,url)=>setLocalUrl(url)} />{item?.mediaUrl&&!localUrl ? <Image alt="Preview ikon keunggulan" className="h-20 w-20 rounded-xl border border-white/10 bg-white object-contain p-2" height={80} src={item.mediaUrl} unoptimized width={80} />:null}{item?.mediaUrl?<ToggleLabel><input type="checkbox" name="removeImage"/> Hapus ikon khusus dan gunakan ikon pilihan</ToggleLabel>:null}</>:<input type="hidden" name="link" value="" />}
+      {sectionHeading?<input type="hidden" name="link" value={ADVANTAGE_SECTION_TOKEN}/>:media ? <><Field label="Link opsional — /cars atau https://…" name="link" value={item?.link} max={500} error={state.errors.link?.[0]} /><MediaUploadField spec={kind==="MAIN_BANNER"?"hero":kind==="LEASING_PARTNER"?"leasingPartner":"promo"} id={imageId} required={!item} className={input} error={state.errors.image?.[0]} onFileSelect={(_,url)=>setLocalUrl(url)} /><Preview item={draft} url={localUrl ?? item?.mediaUrl??null} /></>:kind==="ADVANTAGE"?<><AdvantageIconSelect value={item?.link??""} error={state.errors.link?.[0]}/><MediaUploadField spec="advantageIcon" id={imageId} className={input} error={state.errors.image?.[0]} onFileSelect={(_,url)=>setLocalUrl(url)} />{item?.mediaUrl&&!localUrl ? <Image alt="Preview ikon keunggulan" className="h-20 w-20 rounded-xl border border-white/10 bg-white object-contain p-2" height={80} src={item.mediaUrl} unoptimized width={80} />:null}{item?.mediaUrl?<ToggleLabel><input type="checkbox" name="removeImage"/> Hapus ikon khusus dan gunakan ikon pilihan</ToggleLabel>:null}</>:<input type="hidden" name="link" value="" />}
       {sectionHeading?<input type="hidden" name="sortOrder" value="0"/>:<Field label="Urutan (angka terkecil lebih dahulu)" name="sortOrder" value={String(item?.sortOrder??0)} error={state.errors.sortOrder?.[0]} type="number" min={0} maxValue={999} />}
       <ToggleLabel><DraftCheckbox name="active" initial={item?.active??sectionHeading} /> {sectionHeading?"Tampilkan bagian Mengapa Memilih di website":"Aktif dan tampil di website"}</ToggleLabel>
       <div className="flex flex-wrap gap-3"><button type="submit" disabled={pending} className={button}>{pending?"Menyimpan…":item?"Simpan perubahan":"Tambah item"}</button><CancelEditorButton dirty={dirty} leave={()=>router.push(cancelHref)} /></div><Status {...state} />

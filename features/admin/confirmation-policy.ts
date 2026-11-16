@@ -56,6 +56,7 @@ export function profileConfirmation(original: Values | null, data: FormData): Co
     const before = Boolean(original?.[name]); const after = data.get(name) === "on";
     return before === after ? [] : [{ label: ({ welcomeActive: "Welcome", aboutActive: "Tentang kami", operatingHoursActive: "Jam operasional" } as Record<string, string>)[name], before: before ? "Aktif" : "Nonaktif", after: after ? "Aktif" : "Nonaktif" }];
   });
+  changes.push(...changesFor(original ?? {}, data, { welcomeHeadingDesktopPx: "Judul sambutan desktop", welcomeHeadingMobilePx: "Judul sambutan mobile", welcomeBodyDesktopPx: "Deskripsi sambutan desktop", welcomeBodyMobilePx: "Deskripsi sambutan mobile" }));
   if (original?.showroomKey && (hasFile(data, "image") || data.get("removeImage") === "on")) changes.push({ label: "Foto showroom", before: "Tersimpan", after: hasFile(data, "image") ? "Diganti" : "Dihapus" });
   if ((original?.operatingHoursActive || data.get("operatingHoursActive") === "on") && text(original?.operatingHours) !== text(data.get("operatingHours"))) changes.push({ label: "Jam operasional", before: text(original?.operatingHours), after: text(data.get("operatingHours")) });
   return changes.length ? { ...criticalAction("Ubah publikasi atau informasi operasional?", "Perubahan ini memengaruhi bagian website atau informasi kunjungan dealer."), changes } : null;

@@ -28,14 +28,14 @@ describe("S5.2N approved customer revisions",()=>{
   });
   it("renders the floating widget only with an enabled valid dealer number",()=>{
     const html=renderToStaticMarkup(<FloatingWhatsapp dealer={dealer}/>);
-    expect(html).toContain("bottom-[calc(20px+env(safe-area-inset-bottom))]");expect(html).toContain("h-12");expect(html).toContain("Halo%20%26%20info");
+    expect(html).toContain("bottom-[calc(20px+env(safe-area-inset-bottom))]");expect(html).toContain("min-h-[58px]");expect(html).toContain("Hubungi Sales Kami");expect(html).toContain("Halo%20%26%20info");
     expect(renderToStaticMarkup(<FloatingWhatsapp dealer={{...dealer,whatsappWidgetEnabled:false}}/>)).toBe("");
     expect(renderToStaticMarkup(<FloatingWhatsapp dealer={{...dealer,whatsappNumber:"invalid"}}/>)).toBe("");
   });
   it("keeps hero copy below the image on mobile and preserves the desktop overlay",()=>{
     const hero={...slide,kind:"MAIN_BANNER" as const};
     const html=renderToStaticMarkup(<BannerCarousel slides={[hero]} headline="Judul dealer" description="Deskripsi dealer"/>);
-    expect(html).toContain("bg-gradient-to-r");expect(html).toContain("sm:flex");expect(html).toContain("bg-white px-5 py-6");expect(html).toContain("object-contain sm:object-cover");expect(html).toContain("aspect-[var(--mobile-banner-ratio)]");
+    expect(html).toContain("bg-gradient-to-r");expect(html).toContain("sm:flex");expect(html).toContain("bg-white px-5 py-6");expect(html).toContain("object-contain");expect(html).toContain("sm:h-[clamp(20rem,42vw,26.25rem)]");expect(html).toContain("aspect-[var(--mobile-banner-ratio)]");
   });
   it("constrains used-only dealers without changing the default multi-dealer behavior",()=>{
     expect(applyInventoryMode({filters:{condition:"NEW",sort:"newest",page:1},issues:[]},"USED_ONLY").filters.condition).toBe("USED");
