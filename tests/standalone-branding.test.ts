@@ -18,9 +18,9 @@ vi.mock("next/cache", () => ({ revalidatePath: mocks.refresh }));
 import { contrastRatio, resolveAutomotiveTheme } from "@/features/theme/domain";
 import { allowsPermission } from "@/server/auth/authorization";
 import { LEGACY_DEALER_SCOPE } from "@/server/dealer/scope";
-import { removeStandaloneLogoAction, replaceStandaloneLogoAction, saveStandaloneColorsAction } from "@/server/settings/actions";
-import { removeStandaloneLogo, replaceStandaloneLogo, saveStandaloneColors, standaloneBrandingPermission } from "@/server/settings/branding";
-import { legacyDealerLogoUrl } from "@/server/settings/logo-url";
+import { removeStandaloneFaviconAction, removeStandaloneLogoAction, replaceStandaloneFaviconAction, replaceStandaloneLogoAction, saveStandaloneColorsAction } from "@/server/settings/actions";
+import { removeStandaloneFavicon, removeStandaloneLogo, replaceStandaloneFavicon, replaceStandaloneLogo, saveStandaloneColors, standaloneBrandingPermission } from "@/server/settings/branding";
+import { legacyDealerFaviconUrl, legacyDealerLogoUrl } from "@/server/settings/logo-url";
 import { emptyActionState } from "@/types/action-state";
 
 const legacyWhere = { id: "default", AND: [{ dealerId: null }] };
@@ -36,6 +36,7 @@ const logo = (file = imageFile()) => {
   form.set("logo", file);
   return form;
 };
+const favicon = (file = imageFile()) => { const form = new FormData(); form.set("favicon", file); return form; };
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.lock.mockResolvedValue([{ logoStorageKey: old }]);
@@ -56,6 +57,8 @@ it("requires authentication at direct service boundaries before writes or storag
   await expect(saveStandaloneColors({ primaryColor: "", secondaryColor: "" })).rejects.toThrow("unauthorized");
   await expect(replaceStandaloneLogo(imageFile())).rejects.toThrow("unauthorized");
   await expect(removeStandaloneLogo()).rejects.toThrow("unauthorized");
+  await expect(replaceStandaloneFavicon(imageFile())).rejects.toThrow("unauthorized");
+  await expect(removeStandaloneFavicon()).rejects.toThrow("unauthorized");
   expect(mocks.upsert).not.toHaveBeenCalled();
   expect(mocks.lock).not.toHaveBeenCalled();
   expect(mocks.put).not.toHaveBeenCalled();
@@ -94,6 +97,20 @@ it("re-encodes a logo, scopes the locked update, then deletes the previous logo"
   expect(mocks.update).toHaveBeenCalledWith({ where: legacyWhere, data: { logoStorageKey: upload.key } });
   expect(mocks.update.mock.invocationCallOrder[0]).toBeLessThan(mocks.remove.mock.invocationCallOrder[0]);
   expect(mocks.remove).toHaveBeenCalledExactlyOnceWith(old);
+});
+
+it("re-encodes and isolates dealer favicons with a unique cache-safe key", async () => {
+  mocks.lock.mockResolvedValue([{ faviconStorageKey: "dealer/favicon/old-favicon.webp" }]);
+  expect(await replaceStandaloneFaviconAction(emptyActionState, favicon())).toMatchObject({ status: "success" });
+  const upload = mocks.put.mock.calls[0][0];
+  expect(upload.key).toMatch(/^dealer\/favicon\/[a-f0-9-]+-favicon\.webp$/);
+  const metadata = await sharp(upload.body).metadata();
+  expect(metadata).toMatchObject({ format: "webp", width: 192, height: 192 });
+  expect(mocks.update).toHaveBeenCalledWith({ where: legacyWhere, data: { faviconStorageKey: upload.key } });
+  expect(legacyDealerFaviconUrl(upload.key)).toBe(`/uploads/${upload.key}`);
+  expect(legacyDealerFaviconUrl("dealer/favicon/../foreign.webp")).toBeNull();
+  mocks.lock.mockResolvedValue([{ faviconStorageKey: upload.key }]);
+  expect(await removeStandaloneFaviconAction(emptyActionState, new FormData())).toMatchObject({ status: "success" });
 });
 
 it("rejects SVG and spoofed raster uploads without reaching storage", async () => {

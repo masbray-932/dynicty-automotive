@@ -13,6 +13,7 @@ import type { HomepageCar } from "@/server/homepage/service";
 import type { InventoryContext } from "@/server/inventory/context";
 import { legacyStorefrontInventory } from "@/server/storefront/inventory";
 import { legacyVehicleImageUrl } from "@/server/storefront/media";
+import { inventoryCondition, type InventoryMode } from "@/features/homepage/domain";
 
 export type CatalogBrandOption = {
   name: string;
@@ -31,23 +32,29 @@ export type CatalogData = {
   databaseUnavailable: boolean;
 };
 
-async function getOptions(scope: ReturnType<typeof legacyStorefrontInventory>) {
+const catalogScope = (scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode) => ({
+  ...scope.car,
+  ...(inventoryCondition(mode) ? { condition: inventoryCondition(mode) } : {}),
+});
+
+async function getOptions(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode) {
+  const car = catalogScope(scope, mode);
   const [brands, transmissionRows] = await Promise.all([
     db.brand.findMany({
-      where: scope.brand,
+      where: { ...scope.brand, cars: { some: car } },
       orderBy: { name: "asc" },
       select: {
         name: true,
         slug: true,
         models: {
-          where: scope.model,
+          where: { ...scope.model, cars: { some: car } },
           orderBy: { name: "asc" },
           select: { name: true, slug: true },
         },
       },
     }),
     db.car.findMany({
-      where: scope.car,
+      where: car,
       distinct: ["transmission"],
       orderBy: { transmission: "asc" },
       select: { transmission: true },
@@ -56,14 +63,14 @@ async function getOptions(scope: ReturnType<typeof legacyStorefrontInventory>) {
   return { brands, transmissions: transmissionRows.map((row) => row.transmission) };
 }
 
-export async function getCatalogData(context: InventoryContext, parsed: ParsedCatalogFilters): Promise<CatalogData> {
+export async function getCatalogData(context: InventoryContext, parsed: ParsedCatalogFilters, mode: InventoryMode = "BOTH"): Promise<CatalogData> {
   const scope = legacyStorefrontInventory(context);
   try {
-    const options = await getOptions(scope);
+    const options = await getOptions(scope, mode);
     const invalidCombination = validateCatalogCombination(parsed.filters, options.brands, options.transmissions);
     if (invalidCombination) return { cars: [], total: 0, totalPages: 0, outOfRange: false, ...options, invalidCombination, databaseUnavailable: false };
 
-    const where = { AND: [scope.car, buildCatalogWhere(parsed.filters)] };
+    const where = { AND: [catalogScope(scope, mode), buildCatalogWhere(parsed.filters)] };
     const total = await db.car.count({ where });
     const pagination = paginationState(total, parsed.filters.page);
     if (pagination.outOfRange) return { cars: [], total, totalPages: pagination.totalPages, outOfRange: true, ...options, invalidCombination: null, databaseUnavailable: false };

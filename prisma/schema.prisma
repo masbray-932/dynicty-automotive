@@ -18,6 +18,12 @@ enum CarStatus {
   SOLD
 }
 
+enum InventoryMode {
+  BOTH
+  USED_ONLY
+  NEW_ONLY
+}
+
 model AdminUser {
   id           String         @id @default(cuid())
   email        String         @unique
@@ -40,18 +46,22 @@ model AdminSession {
 }
 
 model Brand {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  slug        String     @unique
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  models      CarModel[]
-  cars        Car[]
-  dealerId    String?
-  dealer      Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  ownedModels CarModel[] @relation("OwnedBrandModels")
+  id             String     @id @default(cuid())
+  name           String     @unique
+  slug           String     @unique
+  logoStorageKey String?
+  active         Boolean    @default(true)
+  sortOrder      Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  models         CarModel[]
+  cars           Car[]
+  dealerId       String?
+  dealer         Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ownedModels    CarModel[] @relation("OwnedBrandModels")
 
   @@unique([dealerId, id])
+  @@index([dealerId, active, sortOrder])
 }
 
 model CarModel {
@@ -186,7 +196,10 @@ model DealerSettings {
   id                String              @id @default("default")
   dealerName        String              @default("Dynicty Automotive")
   logoStorageKey    String?
+  faviconStorageKey String?
   whatsappNumber    String?
+  whatsappWidgetEnabled Boolean         @default(true)
+  whatsappWidgetMessage String          @default("") @db.VarChar(500)
   phone             String?
   email             String?
   address           String?
@@ -195,6 +208,7 @@ model DealerSettings {
   facebookUrl       String?
   primaryColor      String?
   secondaryColor    String?
+  inventoryMode     InventoryMode       @default(BOTH)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   dealerId          String?             @unique
@@ -204,6 +218,25 @@ model DealerSettings {
   serviceCategories ServiceCategory[]
   showroomServices  ShowroomService[]
   articles          Article[]
+  salesTeam         SalesTeamMember[]
+}
+
+model SalesTeamMember {
+  id               String         @id @default(cuid())
+  dealerSettingsId String
+  fullName         String
+  title            String
+  imageStorageKey  String?
+  whatsappNumber   String?
+  biography        String         @default("") @db.Text
+  active           Boolean        @default(false)
+  sortOrder        Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  dealerSettings   DealerSettings @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([dealerSettingsId, id])
+  @@index([dealerSettingsId, active, sortOrder])
 }
 
 enum DealerContentKind {
@@ -220,6 +253,10 @@ model DealerContent {
   welcomeTitle         String         @default("")
   welcomeBody          String         @default("") @db.Text
   welcomeActive        Boolean        @default(false)
+  welcomeHeadingDesktopPx Int?
+  welcomeHeadingMobilePx  Int?
+  welcomeBodyDesktopPx    Int?
+  welcomeBodyMobilePx     Int?
   aboutSummary         String         @default("") @db.Text
   aboutStory           String         @default("") @db.Text
   history              String         @default("") @db.Text

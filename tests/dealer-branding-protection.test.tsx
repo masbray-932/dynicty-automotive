@@ -30,6 +30,8 @@ const operational = {
   dealerName: "Dealer Maju",
   phone: "+62 21 555-0101",
   whatsappNumber: "081234567890",
+  whatsappWidgetEnabled: false,
+  whatsappWidgetMessage: "Halo dari widget",
   email: "sales@example.com",
   address: "Jalan Utama",
   googleMapsUrl: "https://maps.google.com/test",
@@ -40,7 +42,8 @@ const branding = { primaryColor: "#123456", secondaryColor: "#ABCDEF", logoStora
 const logoUrl = "/uploads/dealer/logo/platform.png";
 const makeForm = () => {
   const form = new FormData();
-  for (const [key, value] of Object.entries(operational)) form.set(key, value);
+  for (const [key, value] of Object.entries(operational)) form.set(key, String(value));
+  if (operational.whatsappWidgetEnabled) form.set("whatsappWidgetEnabled", "on");
   return form;
 };
 const expectNoMutation = () => {
@@ -76,6 +79,8 @@ describe("dealer branding write protection", () => {
     });
     const html = renderToStaticMarkup(await PublicLayout({ children: <p>Storefront</p> }));
     expect(html).toContain("--color-primary:#123456");
+    expect(html).toContain("--color-background:#FFFFFF");
+    expect(html).toContain("public-storefront");
     expect(html).toContain(logoUrl);
   });
 

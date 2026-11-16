@@ -8,6 +8,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { standaloneModel, standaloneOwner } from "@/server/standalone/inventory";
 import type { ActionState } from "@/types/action-state";
 import { brandSchema, carModelSchema } from "@/validation/master-data";
+import { BrandLogoError, cleanupBrandLogo, uploadBrandLogo } from "./brand-media";
 
 function duplicateMessage(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
@@ -15,29 +16,41 @@ function duplicateMessage(error: unknown) {
 
 export async function saveBrandAction(_state: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-  const parsed = brandSchema.safeParse({ id: formData.get("id") || undefined, name: formData.get("name") });
+  const parsed = brandSchema.safeParse({ id: formData.get("id") || undefined, name: formData.get("name"), active: formData.get("active") === "on", sortOrder: formData.get("sortOrder") ?? "0" });
   if (!parsed.success) return { message: "Periksa nama merek.", errors: parsed.error.flatten().fieldErrors };
 
+  let uploaded: string | null = null;
+  let oldKey: string | null = null;
   try {
+    uploaded = await uploadBrandLogo(formData.get("logo"));
     if (parsed.data.id) {
       const slug = await uniqueSlug(parsed.data.name, async (candidate) =>
         Boolean(await db.brand.findFirst({ where: { ...standaloneOwner, slug: candidate, NOT: { id: parsed.data.id } }, select: { id: true } })),
       );
-      await db.brand.update({ where: { ...standaloneOwner, id: parsed.data.id }, data: { name: parsed.data.name, slug } });
+      const existing = await db.brand.findUnique({ where: { ...standaloneOwner, id: parsed.data.id }, select: { logoStorageKey: true } });
+      if (!existing) throw new Error("Merek tidak ditemukan.");
+      const removeLogo = formData.get("removeLogo") === "on";
+      const logoStorageKey = uploaded ?? (removeLogo ? null : existing.logoStorageKey);
+      await db.brand.update({ where: { ...standaloneOwner, id: parsed.data.id }, data: { name: parsed.data.name, slug, active: parsed.data.active, sortOrder: parsed.data.sortOrder, logoStorageKey } });
+      if (existing.logoStorageKey !== logoStorageKey) oldKey = existing.logoStorageKey;
     } else {
       const slug = await uniqueSlug(parsed.data.name, async (candidate) =>
         Boolean(await db.brand.findUnique({ where: { ...standaloneOwner, slug: candidate }, select: { id: true } })),
       );
-      await db.brand.create({ data: { ...standaloneOwner, name: parsed.data.name, slug } });
+      await db.brand.create({ data: { ...standaloneOwner, name: parsed.data.name, slug, active: parsed.data.active, sortOrder: parsed.data.sortOrder, logoStorageKey: uploaded } });
     }
   } catch (error) {
+    await cleanupBrandLogo(uploaded);
+    if (error instanceof BrandLogoError) return { message: error.message, errors: { logo: [error.message] } };
     if (duplicateMessage(error)) return { message: "Nama merek sudah digunakan.", errors: { name: ["Gunakan nama lain."] } };
     return { message: "Merek tidak dapat disimpan.", errors: {} };
   }
 
   revalidatePath("/admin/brands");
   revalidatePath("/admin/cars/new");
-  return { message: "Merek berhasil disimpan.", errors: {} };
+  revalidatePath("/"); revalidatePath("/cars");
+  const cleanupFailed = await cleanupBrandLogo(oldKey);
+  return { message: cleanupFailed ? "Merek disimpan; logo lama perlu ditinjau operator." : "Merek berhasil disimpan.", errors: {}, status: cleanupFailed ? "warning" : "success" };
 }
 
 export async function saveModelAction(_state: ActionState, formData: FormData): Promise<ActionState> {

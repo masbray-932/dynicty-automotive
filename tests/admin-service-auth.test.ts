@@ -7,7 +7,7 @@ vi.mock("@/db/client", () => ({ db: {
   car: { count: mocks.query, groupBy: mocks.query, findMany: mocks.query, findUnique: mocks.query, create: mocks.query, update: mocks.query, delete: mocks.query },
   brand: { findUniqueOrThrow: mocks.query }, carModel: { findUnique: mocks.query, findUniqueOrThrow: mocks.query },
   dealerSettings: { findUnique: mocks.query, upsert: mocks.query, update: mocks.query },
-  dealerContent: { findUnique: mocks.query }, dealerContentItem: { findMany: mocks.query },
+  dealerContent: { findUnique: mocks.query }, dealerContentItem: { findMany: mocks.query, count: mocks.query, findFirst: mocks.query },
   $transaction: mocks.query,
 } }));
 vi.mock("@/services/storage", () => ({ getStorageProvider: mocks.storage }));
@@ -74,8 +74,8 @@ describe("sensitive admin service boundaries", () => {
 
   it("public CMS reads remain independent of admin authentication", async () => {
     mocks.auth.mockRejectedValue(new Error("denied"));
-    mocks.query.mockResolvedValueOnce(null).mockResolvedValueOnce([]);
-    expect(await getPublicDealerContent()).toEqual({ profile: null, showroomUrl: null, items: [] });
+    mocks.query.mockResolvedValueOnce(null).mockResolvedValueOnce([]).mockResolvedValueOnce(0).mockResolvedValueOnce(null);
+    expect(await getPublicDealerContent()).toEqual({ profile: null, showroomUrl: null, advantageConfigured: false, advantageSection: null, items: [] });
     expect(mocks.auth).not.toHaveBeenCalled();
   });
 });

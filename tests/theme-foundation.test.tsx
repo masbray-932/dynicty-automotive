@@ -20,6 +20,8 @@ import { ThemeScope } from "@/features/theme/theme-scope";
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "geist-sans" }),
   Geist_Mono: () => ({ variable: "geist-mono" }),
+  Plus_Jakarta_Sans: () => ({ variable: "public-sans" }),
+  Syne: () => ({ variable: "public-display" }),
 }));
 vi.mock("next/server", () => ({ connection: async () => undefined }));
 vi.mock("@/server/homepage/service", () => ({
@@ -137,7 +139,7 @@ describe("Automotive v2 contract", () => {
     expect(bodyStyle).not.toContain("--color-");
     expect(storefrontStyle).toContain("--color-primary:#FFFFFF");
     expect(storefrontStyle).toContain("--color-accent:#ABCDEF");
-    expect(storefrontStyle).toContain("--auto-focus:#ABCDEF");
+    expect(storefrontStyle).toContain("--auto-focus:#171717");
     expect(html).toMatch(/<\/footer><\/div><button[^>]*bg-brand-primary[^>]*>Admin<\/button><\/body>/);
   });
 
