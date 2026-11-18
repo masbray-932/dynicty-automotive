@@ -28,9 +28,20 @@ export async function upsertDealerSettings(input: unknown) {
     dealerSettingsSchema.parse(input);
   // Keep create and update limited to operational data, even if the schema changes later.
   const data = { dealerName, phone, whatsappNumber, email, address, googleMapsUrl, instagramUrl, facebookUrl,
-    ...(Object.hasOwn(input, "inventoryMode") ? { inventoryMode } : {}),
+    ...(inventoryMode !== undefined ? { inventoryMode } : {}),
     ...(Object.hasOwn(input, "whatsappWidgetEnabled") ? { whatsappWidgetEnabled } : {}),
     ...(Object.hasOwn(input, "whatsappWidgetMessage") ? { whatsappWidgetMessage } : {}),
   };
-  return db.dealerSettings.upsert({ where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] }, create: { id: LEGACY_DEALER_SCOPE.dealerId, ...data }, update: data });
+  if (inventoryMode === undefined) {
+    return db.dealerSettings.upsert({ where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] }, create: { id: LEGACY_DEALER_SCOPE.dealerId, ...data }, update: data });
+  }
+  return db.$transaction(async (tx) => {
+    const existing = await tx.dealerSettings.findUnique({ where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] }, select: { inventoryMode: true } });
+    const membershipChanged = inventoryMode !== undefined && existing !== null && existing.inventoryMode !== inventoryMode;
+    return tx.dealerSettings.upsert({
+      where: { id: LEGACY_DEALER_SCOPE.dealerId, AND: [{ dealerId: null }] },
+      create: { id: LEGACY_DEALER_SCOPE.dealerId, ...data, inventoryUpdatedAt: inventoryMode !== undefined ? new Date() : undefined },
+      update: { ...data, ...(membershipChanged ? { inventoryUpdatedAt: new Date() } : {}) },
+    });
+  });
 }

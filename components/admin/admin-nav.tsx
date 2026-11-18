@@ -13,6 +13,7 @@ const links = [
   { href: "/admin/sales-team", label: "Tim Sales" },
   { href: "/admin/content", label: "Konten Website" },
   { href: "/admin/settings", label: "Pengaturan" },
+  { href: "/admin/account", label: "Akun & Handover" },
   { href: "/", label: "Lihat Website" },
 ];
 

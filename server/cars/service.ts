@@ -14,6 +14,23 @@ export class InvalidModelRelationError extends Error {}
 const serializable = { isolationLevel: Prisma.TransactionIsolationLevel.Serializable };
 const carScope = (id: string) => ({ ...standaloneCar, id });
 const imageScope = (carId: string) => ({ ...standaloneCarImage, carId });
+const dealerSettingsId = "default";
+
+function isPublicInventoryMember(car: { status: string; condition: string }, mode: "BOTH" | "USED_ONLY" | "NEW_ONLY") {
+  return car.status === "AVAILABLE" && (mode === "BOTH" || (mode === "USED_ONLY" ? car.condition === "USED" : car.condition === "NEW"));
+}
+
+async function inventoryMode(tx: Prisma.TransactionClient) {
+  return (await tx.dealerSettings.findUnique({ where: { id: dealerSettingsId, AND: [{ dealerId: null }] }, select: { inventoryMode: true } }))?.inventoryMode ?? "BOTH";
+}
+
+async function markInventoryChanged(tx: Prisma.TransactionClient) {
+  await tx.dealerSettings.upsert({
+    where: { id: dealerSettingsId, AND: [{ dealerId: null }] },
+    create: { id: dealerSettingsId, inventoryUpdatedAt: new Date() },
+    update: { inventoryUpdatedAt: new Date() },
+  });
+}
 
 async function findModel(tx: Prisma.TransactionClient, brandId: string, modelId: string) {
   const model = await tx.carModel.findFirst({
@@ -45,16 +62,25 @@ async function carData(tx: Prisma.TransactionClient, values: CarFormValues, excl
 
 export async function createCar(values: CarFormValues) {
   await requireAdmin();
-  return db.$transaction(async (tx) => tx.car.create({
-    data: { ...await carData(tx, values), ...standaloneOwner }, select: { id: true, slug: true },
-  }), serializable);
+  return db.$transaction(async (tx) => {
+    const data = await carData(tx, values);
+    const created = await tx.car.create({ data: { ...data, ...standaloneOwner }, select: { id: true, slug: true } });
+    if (isPublicInventoryMember(data, await inventoryMode(tx))) await markInventoryChanged(tx);
+    return created;
+  }, serializable);
 }
 
 export async function updateCar(id: string, values: CarFormValues) {
   await requireAdmin();
-  return db.$transaction(async (tx) => tx.car.update({
-    where: carScope(id), data: await carData(tx, values, id), select: { id: true, slug: true },
-  }), serializable);
+  return db.$transaction(async (tx) => {
+    const before = await tx.car.findUnique({ where: carScope(id), select: { status: true, condition: true } });
+    if (!before) throw new Error("Mobil tidak ditemukan.");
+    const data = await carData(tx, values, id);
+    const mode = await inventoryMode(tx);
+    const updated = await tx.car.update({ where: carScope(id), data, select: { id: true, slug: true } });
+    if (isPublicInventoryMember(before, mode) !== isPublicInventoryMember(data, mode)) await markInventoryChanged(tx);
+    return updated;
+  }, serializable);
 }
 
 async function deleteScopedImageObject(carId: string, key: string) {
@@ -67,9 +93,11 @@ export async function deleteCarWithMedia(id: string) {
   // Do not cascade a foreign-owned row even if imported data is inconsistent.
   const where = { ...carScope(id), images: { every: standaloneOwner } };
   const keys = await db.$transaction(async (tx) => {
-    const car = await tx.car.findUnique({ where, select: { images: { where: standaloneOwner, select: { storageKey: true } } } });
+    const car = await tx.car.findUnique({ where, select: { status: true, condition: true, images: { where: standaloneOwner, select: { storageKey: true } } } });
     if (!car) return null;
+    const wasPublic = isPublicInventoryMember(car, await inventoryMode(tx));
     await tx.car.delete({ where });
+    if (wasPublic) await markInventoryChanged(tx);
     return car.images.map((image) => image.storageKey);
   }, serializable);
   if (!keys) return { deleted: false, failedKeys: [] as string[] };

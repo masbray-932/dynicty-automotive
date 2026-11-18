@@ -84,7 +84,10 @@ function BrandingForms({ colors, logoUrl, faviconUrl, onResult }: { colors: Bran
       <div className="grid gap-4 sm:grid-cols-2">
         {([["primaryColor", "Warna utama"], ["secondaryColor", "Warna sekunder (indikator fokus)"]] as const).map(([name, label]) =>
           <Field error={colorState.errors[name]} htmlFor={name} key={name} label={label}>
-            <input className={inputClass} id={name} name={name} onChange={event => setDraft(previous => ({ ...previous, [name]: event.target.value }))} pattern="#[0-9a-fA-F]{6}" placeholder="#RRGGBB" value={draft[name]} />
+            <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3">
+              <input aria-label={`Pilih ${label.toLowerCase()}`} className="h-11 w-14 cursor-pointer rounded-lg border border-white/20 bg-zinc-950 p-1" type="color" value={draft[name] || (name === "primaryColor" ? "#C8102E" : "#171717")} onChange={event => setDraft(previous => ({ ...previous, [name]: event.target.value.toUpperCase() }))} />
+              <input className={inputClass} id={name} name={name} onChange={event => setDraft(previous => ({ ...previous, [name]: event.target.value }))} pattern="#[0-9a-fA-F]{6}" placeholder="#RRGGBB" value={draft[name]} />
+            </div>
           </Field>)}
       </div>
       <Button className="w-fit" disabled={busy} type="submit">Simpan Warna</Button>

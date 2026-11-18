@@ -84,7 +84,7 @@ export type StockSummary = { availableCount: number; lastUpdatedAt: Date | null 
 
 export function formatStockUpdateDate(value: Date | null) {
   if (!value || Number.isNaN(value.getTime())) return null;
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "Asia/Jakarta" }).format(value);
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(value);
 }
 
 export function normalizeWhatsappNumber(value: string | null | undefined) {

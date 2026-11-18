@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPublicEditorialDetail } from "@/server/editorial/public";
 import { publicMetadata } from "@/server/editorial/metadata";
 import { EditorialDetail } from "@/features/editorial/public-content";
+import { ServiceCtaBanner } from "@/features/editorial/service-cta-banner";
 type Props = { params: Promise<{slug:string}> };
 export async function generateMetadata({params}:Props) { await connection();const {slug}=await params;const item=await getPublicEditorialDetail("service",slug);if(!item)return {title:"Konten tidak ditemukan",robots:{index:false,follow:false}};return {...await publicMetadata(item.title,item.summary.slice(0,160),`/services/${item.slug}`),...(item.imageUrl?{openGraph:{title:item.title,description:item.summary.slice(0,160),url:`/services/${item.slug}`,images:[{url:item.imageUrl,alt:item.imageAlt}]}}:{})}; }
-export default async function Page({params}:Props) {await connection();const {slug}=await params;const item=await getPublicEditorialDetail("service",slug);if(!item)notFound();return <EditorialDetail item={item} base="/services" />;}
+export default async function Page({params}:Props) {await connection();const {slug}=await params;const item=await getPublicEditorialDetail("service",slug);if(!item)notFound();return <><EditorialDetail item={item} base="/services" />{item.cta?<ServiceCtaBanner cta={item.cta}/>:null}</>;}

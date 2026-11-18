@@ -44,7 +44,7 @@ beforeEach(() => {
   mocks.headers.mockResolvedValue(new Headers({ "x-dealer-id": otherScope.dealerId, "x-role": "platform-admin" }));
   mocks.session.mockResolvedValue({
     id: "session", expiresAt: new Date(Date.now() + 60_000),
-    admin: { id: "legacy-admin", email: "dealer@example.com", role: "platform-admin", scope: otherScope },
+    admin: { id: "legacy-admin", name: "Legacy Admin", email: "dealer@example.com", emailVerifiedAt: new Date("2026-01-01"), platformRole: null, memberships: [{ id: "membership", role: "OWNER", dealerSettingsId: "default" }], role: "platform-admin", scope: otherScope },
   });
   mocks.settingsRead.mockResolvedValue({ ...operations, primaryColor: "#123456" });
   mocks.contentRead.mockResolvedValue(null);
@@ -86,11 +86,11 @@ describe("authorization contract", () => {
 
 describe("legacy session and data boundaries", () => {
   it("loads only the authenticated identity and cannot exercise platform or cross-dealer permissions", async () => {
-    expect(await getCurrentAdmin()).toEqual({ id: "legacy-admin", email: "dealer@example.com" });
+    expect(await getCurrentAdmin()).toMatchObject({ id: "legacy-admin", sessionId: "session", name: "Legacy Admin", email: "dealer@example.com", membership: { role: "OWNER", dealerSettingsId: "default" } });
     expect(mocks.getCookie).toHaveBeenCalledWith("dynicty_admin_session");
     expect(mocks.session).toHaveBeenCalledWith({
       where: { tokenHash: createHmac("sha256", "unit-test-session-key").update("opaque-test-token").digest("hex") },
-      include: { admin: { select: { id: true, email: true } } },
+      include: { admin: { select: { id: true, name: true, email: true, emailVerifiedAt: true, platformRole: true, memberships: { where: { dealerSettingsId: "default", status: "ACTIVE" }, take: 1, select: { id: true, role: true, dealerSettingsId: true } } } } },
     });
     await expect(requireAdmin()).resolves.toMatchObject({ id: "legacy-admin" });
     await expect(requireLegacyAdminPermission(branding)).rejects.toThrow("permission denied");

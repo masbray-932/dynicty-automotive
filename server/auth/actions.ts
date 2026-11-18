@@ -55,7 +55,7 @@ export async function loginAction(
 
   let admin;
   try {
-    admin = await db.adminUser.findUnique({ where: { email: result.data.email } });
+    admin = await db.adminUser.findUnique({ where: { email: result.data.email }, include: { memberships: { where: { status: "ACTIVE" }, take: 1, select: { id: true } } } });
   } catch {
     logger.error("admin.login_database_failure");
     return { message: "Login belum dapat diproses. Silakan coba kembali.", errors: {} };
@@ -65,7 +65,7 @@ export async function loginAction(
     admin?.passwordHash ?? await getDummyPasswordHash(),
   );
 
-  if (!admin || !passwordIsValid) {
+  if (!admin || !passwordIsValid || !admin.emailVerifiedAt || !admin.memberships.length) {
     const blocked = throttleKeys.map((key) => recordLoginFailure(key)).some((state) => !state.allowed);
     logger.warn(blocked ? "admin.login_blocked" : "admin.login_failed");
     return { message: "Email atau kata sandi tidak sesuai.", errors: {} };

@@ -23,7 +23,9 @@ export async function getPublicEditorialList(kind: "service" | "article", page =
 // Request-local memoization only: never a shared cross-installation cache.
 export const getPublicEditorialDetail = cache(async (kind: "service" | "article", slug: string) => {
   const row = await getPublishedEditorialBySlug(kind, slug);
-  return row ? { ...presentation(row), summary: "excerpt" in row ? row.excerpt : row.shortDescription, publishedAt: "publishedAt" in row ? row.publishedAt : null } : null;
+  if (!row) return null;
+  const cta = "cta" in row && row.cta?.enabled ? { ...row.cta, imageUrl: editorialImageUrl(row.cta.imageStorageKey) } : null;
+  return { ...presentation(row), summary: "excerpt" in row ? row.excerpt : row.shortDescription, publishedAt: "publishedAt" in row ? row.publishedAt : null, cta };
 });
 export async function getHomepageServices() {
   try { return (await getPublishedServices(1, undefined, true)).slice(0, 6).map(row => ({ ...presentation(row), summary: row.shortDescription })); }

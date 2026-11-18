@@ -119,11 +119,12 @@ async function getFeaturedCars(scope: ReturnType<typeof legacyStorefrontInventor
 
 async function getStockSummary(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode): Promise<StockSummary> {
   const where = publicInventoryWhere(scope, mode);
-  const [availableCount, latest] = await Promise.all([
+  const [availableCount, latest, settings] = await Promise.all([
     db.car.count({ where }),
     db.car.findFirst({ where, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], select: { updatedAt: true } }),
+    db.dealerSettings.findUnique({ where: { id: scope.car.dealerId === null ? "default" : String(scope.car.dealerId), AND: [{ dealerId: scope.car.dealerId }] }, select: { inventoryUpdatedAt: true } }),
   ]);
-  return { availableCount, lastUpdatedAt: latest?.updatedAt ?? null };
+  return { availableCount, lastUpdatedAt: settings?.inventoryUpdatedAt ?? latest?.updatedAt ?? null };
 }
 
 async function getLatestCars(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode, excludedIds: string[]) {

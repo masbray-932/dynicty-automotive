@@ -67,15 +67,15 @@ export function isDealerFaviconKey(key: string) {
     !key.includes("..") && !/\s/.test(key);
 }
 
-export function createEditorialMediaKey(kind: "service" | "article", mime: string, suffix = crypto.randomUUID()) {
+export function createEditorialMediaKey(kind: "service" | "article" | "service-cta", mime: string, suffix = crypto.randomUUID()) {
   const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mime];
-  if (!["service", "article"].includes(kind) || !extension) throw new Error("Invalid editorial media input.");
+  if (!["service", "article", "service-cta"].includes(kind) || !extension) throw new Error("Invalid editorial media input.");
   assertSuffix(suffix);
   return `dealers/default/editorial/${kind}/${suffix}.${extension}`;
 }
 
 export function isEditorialMediaKey(key: string) {
-  return /^dealers\/default\/editorial\/(?:service|article)\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp)$/.test(key);
+  return /^dealers\/default\/editorial\/(?:service|article|service-cta)\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp)$/.test(key);
 }
 
 export function createBrandLogoKey(mime: string, suffix = crypto.randomUUID()) {
