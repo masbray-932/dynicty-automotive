@@ -1,5 +1,6 @@
 import { z } from "zod";
-export const strongPassword=z.string().min(12,"Minimal 12 karakter.").max(128).regex(/[a-z]/,"Harus memuat huruf kecil.").regex(/[A-Z]/,"Harus memuat huruf besar.").regex(/[0-9]/,"Harus memuat angka.");
+import { strongPasswordSchema } from "@/validation/password";
+export const strongPassword=strongPasswordSchema;
 export const profileSchema=z.object({name:z.string().trim().min(2).max(100)});
 export const passwordChangeSchema=z.object({currentPassword:z.string().min(1).max(128),newPassword:strongPassword});
 export const emailChangeSchema=z.object({email:z.email().trim().toLowerCase()});
