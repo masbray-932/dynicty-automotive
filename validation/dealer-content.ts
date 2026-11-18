@@ -3,8 +3,8 @@ import { ADVANTAGE_SECTION_TOKEN, CONTENT_KINDS, isAdvantageCmsToken, safeConten
 const optionalPixels = (min:number,max:number) => z.preprocess(value => value === "" || value === null || value === undefined ? null : value, z.coerce.number().int("Ukuran font harus bilangan bulat.").min(min,`Ukuran minimum ${min}px.`).max(max,`Ukuran maksimum ${max}px.`).nullable());
 export const dealerContentSchema = z.object({
   welcomeTitle: z.string().trim().max(150), welcomeBody: z.string().trim().max(2000), welcomeActive: z.boolean(),
-  welcomeHeadingDesktopPx: optionalPixels(32,72), welcomeHeadingMobilePx: optionalPixels(24,48),
-  welcomeBodyDesktopPx: optionalPixels(14,24), welcomeBodyMobilePx: optionalPixels(14,22),
+  welcomeHeadingDesktopPx: optionalPixels(32,72), welcomeHeadingMobilePx: optionalPixels(16,48),
+  welcomeBodyDesktopPx: optionalPixels(14,24), welcomeBodyMobilePx: optionalPixels(16,22),
   history: z.string().trim().max(12000).default(""), vision: z.string().trim().max(4000).default(""),
   mission: z.string().trim().max(4000).default(""), achievements: z.string().trim().max(6000).default(""),
   aboutSummary: z.string().trim().max(1500), aboutStory: z.string().trim().max(12000), aboutActive: z.boolean(),

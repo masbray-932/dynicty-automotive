@@ -19,9 +19,9 @@ function Field({label,name,value="",multiline=false,max=200,error,type="text",mi
 type TypographyField = "welcomeHeadingDesktopPx"|"welcomeHeadingMobilePx"|"welcomeBodyDesktopPx"|"welcomeBodyMobilePx";
 const typographyControls = [
   ["welcomeHeadingDesktopPx","Judul desktop",32,72],
-  ["welcomeHeadingMobilePx","Judul mobile",24,48],
+  ["welcomeHeadingMobilePx","Judul mobile",16,48],
   ["welcomeBodyDesktopPx","Deskripsi desktop",14,24],
-  ["welcomeBodyMobilePx","Deskripsi mobile",14,22],
+  ["welcomeBodyMobilePx","Deskripsi mobile",16,22],
 ] as const;
 function WelcomeTypographyControls({profile,errors}:{profile:DealerContent|null;errors:Record<string,string[]|undefined>}) {
   const initial = Object.fromEntries(typographyControls.map(([name])=>[name,profile?.[name]?.toString()??""])) as Record<TypographyField,string>;
