@@ -109,9 +109,10 @@ describe("Phase 6 session and structured data", () => {
 
   it("builds factual Vehicle JSON-LD without unsupported claims", () => {
     const data = buildVehicleStructuredData({
-      title: "Toyota Avanza G 2024", description: "Unit tersedia.", condition: "USED", brand: "Toyota", model: "Avanza",
-      year: 2024, price: "250000000", transmission: "Automatic", fuelType: "Bensin", mileage: 12000,
+      id: "car-avanza", title: "Toyota Avanza G 2024", description: "Unit tersedia.", condition: "USED", brand: "Toyota", model: "Avanza",
+      year: 2024, price: "250000000", transmission: "Automatic", fuelType: "Bensin", color: "Hitam", mileage: 12000,
       images: ["https://media.example/car.webp"], url: "https://dealer.example/cars/avanza",
+      dealerName: "Dealer Example", dealerUrl: "https://dealer.example",
     });
     const serialized = JSON.stringify(data);
     expect(serialized).toContain("InStock");

@@ -7,6 +7,8 @@ import { normalizeThemeColor } from "@/features/theme/domain";
 import { ThemeScope } from "@/features/theme/theme-scope";
 import { getDealerPresentation } from "@/server/homepage/service";
 import { FloatingWhatsapp } from "@/components/public/floating-whatsapp";
+import { buildDealerStructuredData, serializeJsonLd } from "@/features/seo/structured-data";
+import { getStorefrontSiteUrl, legacyStorefrontContext } from "@/server/storefront/context";
 
 import { getPublicDealerContent } from "@/server/content/service";
 
@@ -19,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PublicLayout({ children }: { children: ReactNode }) {
   await connection();
   const [dealer, content] = await Promise.all([getDealerPresentation(), getPublicDealerContent()]);
+  const dealerStructuredData = buildDealerStructuredData(dealer, getStorefrontSiteUrl(legacyStorefrontContext));
   return (
     <ThemeScope className="public-storefront flex min-h-screen flex-col" overrides={{
       "--color-primary": normalizeThemeColor(dealer.primaryColor),
@@ -30,6 +33,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
       "--color-text-secondary": "#606060",
       "--color-border": "#E5E5E5",
     }}>
+      <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(dealerStructuredData) }} type="application/ld+json" />
       <SiteHeader dealer={dealer} />
       <main className="flex-1">{children}</main>
       <SiteFooter dealer={dealer} hours={content.profile?.operatingHoursActive ? content.profile.operatingHours : undefined} />

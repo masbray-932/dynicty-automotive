@@ -160,7 +160,7 @@ it("emits only legacy sitemap rows and configured canonical paths, ignoring requ
   ]);
   expect(mocks.car.findMany.mock.calls[0][0].where).toEqual(published);
   const metadata = await generateMetadata({ params: Promise.resolve({ slug: car.slug }) });
-  expect(metadata.alternates?.canonical).toBe("/cars/legacy-car");
+  expect(metadata.alternates?.canonical).toBe("https://legacy.example/cars/legacy-car");
   expect(getStorefrontSiteUrl(legacy)).toBe("https://legacy.example");
   expect(mocks.dealerDomain.findMany).not.toHaveBeenCalled();
 });

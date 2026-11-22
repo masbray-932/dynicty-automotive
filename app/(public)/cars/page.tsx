@@ -9,6 +9,7 @@ import { getCatalogData } from "@/server/catalog/service";
 import { legacyStorefrontContext } from "@/server/storefront/context";
 import { getDealerPresentation } from "@/server/homepage/service";
 import { inventoryCopy } from "@/features/homepage/domain";
+import { publicMetadata } from "@/server/editorial/metadata";
 
 type PageProps = { searchParams: Promise<RawCatalogSearchParams> };
 
@@ -17,13 +18,12 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const dealer = await getDealerPresentation();
   const copy = inventoryCopy(dealer.inventoryMode ?? "BOTH");
   const indexable = isCatalogIndexable(raw);
-  return {
-    title: `Daftar ${copy.metadata}`,
-    description: `Jelajahi daftar ${copy.metadata.toLowerCase()} yang tersedia serta gunakan filter untuk menemukan pilihan yang sesuai.`,
-    alternates: { canonical: "/cars" },
-    openGraph: { type: "website", title: `Daftar ${copy.metadata}`, description: copy.description, url: "/cars" },
-    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
-  };
+  return publicMetadata(
+    `Daftar ${copy.metadata}`,
+    `Jelajahi daftar ${copy.metadata.toLowerCase()} yang tersedia serta gunakan filter untuk menemukan pilihan yang sesuai.`,
+    "/cars",
+    { filtered: !indexable },
+  );
 }
 
 export default async function CarsPage({ searchParams }: PageProps) {

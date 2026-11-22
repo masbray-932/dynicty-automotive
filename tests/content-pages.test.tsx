@@ -30,7 +30,7 @@ describe("dealer content page wiring (mocked reads)",()=>{
   });
   it("uses the same profile and factual advantages on /about",async()=>{
     const html=renderToStaticMarkup(await AboutPage());expect(html).toContain("Cerita dealer test.");expect(html).toContain("Keunggulan test");expect(html).toContain("Senin 09:00–17:00");expect(html).toContain('href="/cars"');
-    const metadata=await aboutMetadata();expect(metadata.alternates?.canonical).toBe("/about");expect(metadata.description).toBe(data.content.profile.aboutSummary);
-    expect((await homeMetadata()).alternates?.canonical).toBe("/");
+    const metadata=await aboutMetadata();expect(metadata.alternates?.canonical).toBe("http://localhost:3000/about");expect(metadata.description).toBe(data.content.profile.aboutSummary);
+    expect((await homeMetadata()).alternates?.canonical).toBe("http://localhost:3000/");
   });
 });

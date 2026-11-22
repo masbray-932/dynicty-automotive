@@ -7,12 +7,13 @@ import { WhatsAppLink } from "@/components/public/whatsapp-link";
 import { buildVehicleSeoDescription, createVehicleWhatsappUrl } from "@/features/car-detail/domain";
 import { VehicleGallery } from "@/features/car-detail/gallery";
 import { buildVehicleStructuredData, serializeJsonLd } from "@/features/car-detail/seo";
+import { buildBreadcrumbStructuredData } from "@/features/seo/structured-data";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { shouldShowMileage } from "@/features/homepage/domain";
 import { formatMileage, formatRupiah } from "@/lib/format";
-import { absoluteSiteUrl } from "@/lib/site-url";
 import { getCarDetailPageData } from "@/server/car-detail/service";
-import { legacyStorefrontContext } from "@/server/storefront/context";
+import { publicMetadata } from "@/server/editorial/metadata";
+import { getStorefrontSiteUrl, legacyStorefrontContext } from "@/server/storefront/context";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -22,15 +23,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (result.kind === "not-found") notFound();
   if (result.kind === "error") return { title: "Detail Mobil Tidak Tersedia", robots: { index: false, follow: false } };
   const description = buildVehicleSeoDescription({ title: result.car.title, transmission: result.car.transmission, dealerName: result.dealer.dealerName });
-  return {
-    title: { absolute: `${result.car.title} | ${result.dealer.dealerName}` },
-    description,
-    alternates: { canonical: `/cars/${result.car.slug}` },
-    openGraph: {
-      type: "website", title: `${result.car.title} | ${result.dealer.dealerName}`, description, url: `/cars/${result.car.slug}`,
-      images: [{ url: result.car.images[0]?.url ?? "/images/car-placeholder.svg", alt: result.car.images[0]?.alt ?? `Placeholder foto ${result.car.title}` }],
-    },
-  };
+  return publicMetadata(result.car.title, description, `/cars/${result.car.slug}`, {
+    fullTitle: `${result.car.title} | ${result.dealer.dealerName}`,
+    image: result.car.images[0] ? { url: result.car.images[0].url, alt: result.car.images[0].alt } : null,
+  });
 }
 
 export default async function CarDetailPage({ params }: PageProps) {
@@ -42,7 +38,8 @@ export default async function CarDetailPage({ params }: PageProps) {
 
   const { car, dealer, related } = result;
   const price = formatRupiah(car.price);
-  const publicUrl = absoluteSiteUrl(`/cars/${car.slug}`);
+  const siteUrl = getStorefrontSiteUrl(legacyStorefrontContext);
+  const publicUrl = new URL(`/cars/${car.slug}`, siteUrl).toString();
   const whatsappUrl = createVehicleWhatsappUrl(dealer.whatsappNumber, { title: car.title, price, url: publicUrl });
   const specifications = [
     ["Kondisi", car.condition === "NEW" ? "Baru" : "Bekas"], ["Merek", car.brand.name], ["Model", car.model.name], ["Varian", car.variant],
@@ -50,6 +47,7 @@ export default async function CarDetailPage({ params }: PageProps) {
     ...(shouldShowMileage(car.condition, car.mileage) ? [["Jarak tempuh", formatMileage(car.mileage!)]] : []),
   ];
   const structuredData = buildVehicleStructuredData({
+    id: car.id,
     title: car.title,
     description: car.description || buildVehicleSeoDescription({ title: car.title, transmission: car.transmission, dealerName: dealer.dealerName }),
     condition: car.condition,
@@ -59,14 +57,23 @@ export default async function CarDetailPage({ params }: PageProps) {
     price: car.price,
     transmission: car.transmission,
     fuelType: car.fuelType,
+    color: car.color,
     mileage: car.mileage,
     images: car.images.map((image) => image.url),
     url: publicUrl,
+    dealerName: dealer.dealerName,
+    dealerUrl: siteUrl,
   });
+  const breadcrumbStructuredData = buildBreadcrumbStructuredData([
+    { name: "Beranda", url: new URL("/", siteUrl).toString() },
+    { name: "Mobil", url: new URL("/cars", siteUrl).toString() },
+    { name: car.title, url: publicUrl },
+  ]);
 
   return (
     <PageContainer className={`py-8 sm:py-12 ${whatsappUrl ? "pb-28 lg:pb-16" : ""}`}>
       <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }} type="application/ld+json" />
+      <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbStructuredData) }} type="application/ld+json" />
       <nav aria-label="Breadcrumb" className="mb-7 text-sm text-[#606060]"><ol className="flex flex-wrap items-center gap-2"><li><Link className="hover:text-[#171717]" href="/">Beranda</Link></li><li aria-hidden="true">›</li><li><Link className="hover:text-[#171717]" href="/cars">Mobil</Link></li><li aria-hidden="true">›</li><li aria-current="page" className="truncate text-[#171717]">{car.title}</li></ol></nav>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">

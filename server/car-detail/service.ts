@@ -13,6 +13,7 @@ import { legacyVehicleImageUrl } from "@/server/storefront/media";
 import { inventoryCondition, type InventoryMode } from "@/features/homepage/domain";
 
 export type PublicCarDetail = {
+  id: string;
   slug: string;
   title: string;
   condition: "NEW" | "USED";
@@ -75,7 +76,7 @@ const getLegacyCarDetailPageData = cache(async (slug: string, mode: InventoryMod
     }));
     const [dealer, related] = await Promise.all([getDealerPresentation(), relatedCars(scope, mode, car)]);
     const detail: PublicCarDetail = {
-      slug: car.slug, title, condition: car.condition, brand: car.brand, model: car.model, variant: car.variant, year: car.year,
+      id: car.id, slug: car.slug, title, condition: car.condition, brand: car.brand, model: car.model, variant: car.variant, year: car.year,
       price: car.price.toString(), transmission: car.transmission, fuelType: car.fuelType, color: car.color, mileage: car.mileage,
       description: car.description, updatedAt: car.updatedAt,
       images: ordered.map((image, index) => ({ id: image.id, url: image.url, isPrimary: image.isPrimary, alt: `Foto ${title}${index ? ` ${index + 1}` : ""}` })),

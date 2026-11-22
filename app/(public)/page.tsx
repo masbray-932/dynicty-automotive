@@ -16,12 +16,13 @@ import { PublicSalesTeam } from "@/features/sales-team/public-sales-team";
 import { getPublicSalesTeam } from "@/server/sales-team/service";
 import { ScrollReveal } from "@/components/public/scroll-reveal";
 import { formatStockUpdateDate, inventoryCopy } from "@/features/homepage/domain";
+import { publicMetadata } from "@/server/editorial/metadata";
 export async function generateMetadata(): Promise<Metadata> {
   await connection(); const dealer=await getDealerPresentation();
   const copy=inventoryCopy(dealer.inventoryMode ?? "BOTH");
   const title=`${dealer.dealerName} — ${copy.metadata}`;
   const description=`Jelajahi ${copy.metadata.toLowerCase()} yang tersedia dari ${dealer.dealerName}.`;
-  return {title:{absolute:title},description,alternates:{canonical:"/"},openGraph:{type:"website",title,description,url:"/",...(dealer.logoUrl?{images:[{url:dealer.logoUrl,alt:`Logo ${dealer.dealerName}`}]}:{})}};
+  return publicMetadata(copy.metadata, description, "/", { fullTitle: title, image: dealer.logoUrl ? { url: dealer.logoUrl, alt: `Logo ${dealer.dealerName}` } : null });
 }
 export default async function HomePage() {
   await connection();

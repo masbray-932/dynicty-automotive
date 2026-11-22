@@ -10,7 +10,7 @@ export const publicPage = (value: string | string[] | undefined) => {
   return raw && /^[1-9]\d{0,3}$/.test(raw) ? Math.min(1000, Number(raw)) : 1;
 };
 function presentation<T extends { id: string; slug: string; title: string; body: string; imageStorageKey: string | null; imageAlt: string; updatedAt: Date }>(row: T) {
-  return { id: row.id, slug: row.slug, title: row.title, body: row.body, imageUrl: editorialImageUrl(row.imageStorageKey), imageAlt: row.imageAlt, updatedAt: row.updatedAt };
+  return { id: row.id, slug: row.slug, title: row.title, body: row.body, imageUrl: editorialImageUrl(row.imageStorageKey), imageAlt: row.imageAlt.trim() || row.title, updatedAt: row.updatedAt };
 }
 export async function getPublicEditorialList(kind: "service" | "article", page = 1, category?: string) {
   const slug = category && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) && category.length <= 100 ? category : undefined;

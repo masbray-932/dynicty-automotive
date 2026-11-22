@@ -4,7 +4,7 @@ import { EditorialCards, EditorialPagination } from "@/features/editorial/public
 import { getPublicEditorialList, publicPage } from "@/server/editorial/public";
 import { publicMetadata } from "@/server/editorial/metadata";
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
-export async function generateMetadata({searchParams}: Props) { await connection(); const params=await searchParams; return publicMetadata("Artikel", "Informasi artikel yang diterbitkan showroom.", "/articles", Object.keys(params).length > 0); }
+export async function generateMetadata({searchParams}: Props) { await connection(); const params=await searchParams; return publicMetadata("Artikel", "Informasi artikel yang diterbitkan showroom.", "/articles", { filtered: Object.keys(params).length > 0 }); }
 export default async function Page({searchParams}: Props) {
  await connection(); const params=await searchParams; const page=publicPage(params.page); const category = undefined;
  const data=await getPublicEditorialList("article",page,category);

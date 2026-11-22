@@ -4,11 +4,12 @@ import { PageContainer } from "@/components/ui/page-container";
 import { getDealerPresentation } from "@/server/homepage/service";
 import { getPublicDealerContent } from "@/server/content/service";
 import { AboutSection, AdvantagesSection, DealerContact } from "@/features/content/public-sections";
+import { publicMetadata } from "@/server/editorial/metadata";
 export async function generateMetadata():Promise<Metadata> {
   await connection();const [dealer,content]=await Promise.all([getDealerPresentation(),getPublicDealerContent()]);
   const title=`Tentang ${dealer.dealerName}`;
   const description=content.profile?.aboutActive && content.profile.aboutSummary ? content.profile.aboutSummary.slice(0,160) : `Profil dan informasi kontak ${dealer.dealerName}.`;
-  return {title:{absolute:title},description,alternates:{canonical:"/about"},openGraph:{title,description,url:"/about",type:"website"}};
+  return publicMetadata(title, description, "/about", { fullTitle: title, image: dealer.logoUrl ? { url: dealer.logoUrl, alt: `Logo ${dealer.dealerName}` } : null });
 }
 export default async function AboutPage() {
   await connection();const [dealer,content]=await Promise.all([getDealerPresentation(),getPublicDealerContent()]);
