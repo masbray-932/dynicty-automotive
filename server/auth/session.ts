@@ -29,6 +29,7 @@ export async function createAdminSession(adminId: string) {
       limit: EXPIRED_SESSION_CLEANUP_LIMIT,
     }),
     db.adminSession.create({ data: { adminId, tokenHash: tokenHash(token), expiresAt } }),
+    db.adminUser.update({ where: { id: adminId }, data: { lastLoginAt: new Date() } }),
   ]);
 
   const cookieStore = await cookies();
@@ -48,7 +49,7 @@ export async function getCurrentAdmin() {
 
   const session = await db.adminSession.findUnique({
     where: { tokenHash: tokenHash(token) },
-    include: { admin: { select: { id: true, email: true } } },
+    include: { admin: { select: { id: true, name: true, email: true, emailVerifiedAt: true, platformRole: true, memberships: { where: { dealerSettingsId: LEGACY_DEALER_SCOPE.dealerId, status: "ACTIVE" }, take: 1, select: { id: true, role: true, dealerSettingsId: true } } } } },
   });
 
   if (!session) return null;
@@ -56,11 +57,11 @@ export async function getCurrentAdmin() {
     await db.adminSession.deleteMany({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
-  return { id: session.admin.id, email: session.admin.email };
+  const membership = session.admin.memberships[0];
+  if (!membership || !session.admin.emailVerifiedAt) return null;
+  return { id: session.admin.id, sessionId: session.id, name: session.admin.name, email: session.admin.email, emailVerifiedAt: session.admin.emailVerifiedAt, platformRole: session.admin.platformRole, membership };
 }
 
-// Legacy AdminSession has no role or membership columns. Never derive either
-// from request data or from extra properties on a session/user object.
 export async function requireLegacyAdminPermission(request: AuthorizationRequest) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/admin/login");
@@ -73,8 +74,6 @@ export async function requireLegacyAdminPermission(request: AuthorizationRequest
   return admin;
 }
 
-// Existing Admin entry points explicitly use the single-dealer compatibility
-// path. Future membership-based accounts require their own verified resolver.
 export async function requireAdmin() {
   return requireLegacyAdminPermission({ permission: "dealer:operate", scope: LEGACY_DEALER_SCOPE });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bannerFit, bannerRatio, canActivateMain, safeContentLink, visibleItems, type PublicContentItem } from "@/features/content/domain";
+import { ADVANTAGE_SECTION_TOKEN, advantageIconToken, bannerFit, bannerRatio, canActivateMain, safeContentLink, visibleItems, type PublicContentItem } from "@/features/content/domain";
 import { contentItemSchema, dealerContentSchema } from "@/validation/dealer-content";
 import { createContentMediaKey } from "@/services/storage/key";
 import { parseCatalogFilters } from "@/features/catalog/domain";
@@ -22,6 +22,9 @@ describe("dealer CMS domain",()=>{
     expect(contentItemSchema.safeParse({...item,kind:"FAQ",body:"",link:""}).success).toBe(false);
     expect(visibleItems([{...item,kind:"FAQ",body:" "}],"FAQ")).toEqual([]);
     expect(contentItemSchema.safeParse({...item,kind:"ADVANTAGE",body:"Factual",link:""}).success).toBe(true);
+    expect(contentItemSchema.safeParse({...item,kind:"ADVANTAGE",body:"Factual",link:advantageIconToken("quality")}).success).toBe(true);
+    expect(contentItemSchema.safeParse({...item,kind:"ADVANTAGE",body:"",link:ADVANTAGE_SECTION_TOKEN}).success).toBe(true);
+    expect(contentItemSchema.safeParse({...item,kind:"ADVANTAGE",body:"Factual",link:"cms:advantage-icon:unknown"}).success).toBe(false);
   });
   it("rejects active incomplete profile; allows truly empty inactive profile",()=>{
     const profile={welcomeTitle:"",welcomeBody:"",welcomeActive:false,aboutSummary:"",aboutStory:"",aboutActive:false,showroomAlt:"",operatingHours:""};

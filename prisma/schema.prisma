@@ -18,13 +18,27 @@ enum CarStatus {
   SOLD
 }
 
+enum InventoryMode {
+  BOTH
+  USED_ONLY
+  NEW_ONLY
+}
+
 model AdminUser {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  sessions     AdminSession[]
+  id                  String                  @id @default(cuid())
+  name                String                  @default("")
+  email               String                  @unique
+  emailVerifiedAt     DateTime?
+  passwordHash        String
+  platformRole        PlatformAdminRole?
+  lastLoginAt         DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  sessions            AdminSession[]
+  memberships         AdminDealerMembership[]
+  createdInvitations  AdminInvitation[]       @relation("InvitationCreator")
+  acceptedInvitations AdminInvitation[]       @relation("InvitationAcceptor")
+  emailChangeTokens   AdminEmailChangeToken[]
 }
 
 model AdminSession {
@@ -39,19 +53,100 @@ model AdminSession {
   @@index([expiresAt])
 }
 
+enum PlatformAdminRole {
+  OWNER
+  SUPPORT
+}
+
+enum DealerAdminRole {
+  OWNER
+  ADMIN
+}
+
+enum DealerMembershipStatus {
+  ACTIVE
+  REVOKED
+}
+
+model AdminDealerMembership {
+  id               String                 @id @default(cuid())
+  adminId          String
+  dealerSettingsId String
+  role             DealerAdminRole        @default(ADMIN)
+  status           DealerMembershipStatus @default(ACTIVE)
+  activatedAt      DateTime               @default(now())
+  revokedAt        DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  admin            AdminUser              @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  dealerSettings   DealerSettings         @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([adminId, dealerSettingsId])
+  @@index([dealerSettingsId, status, role])
+}
+
+model AdminInvitation {
+  id               String          @id @default(cuid())
+  dealerSettingsId String
+  invitedEmail     String
+  role             DealerAdminRole @default(OWNER)
+  tokenHash        String          @unique @db.VarChar(64)
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  createdById      String
+  acceptedById     String?
+  createdAt        DateTime        @default(now())
+  dealerSettings   DealerSettings  @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy        AdminUser       @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  acceptedBy       AdminUser?      @relation("InvitationAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([dealerSettingsId, invitedEmail, expiresAt])
+}
+
+model AdminEmailChangeToken {
+  id        String    @id @default(cuid())
+  adminId   String
+  newEmail  String
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, expiresAt])
+}
+
+model AdminAuditLog {
+  id               String   @id @default(cuid())
+  dealerSettingsId String?
+  actorAdminId     String?
+  targetAdminId    String?
+  action           String   @db.VarChar(80)
+  detail           String   @default("") @db.VarChar(500)
+  createdAt        DateTime @default(now())
+
+  @@index([dealerSettingsId, createdAt])
+  @@index([actorAdminId, createdAt])
+}
+
 model Brand {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  slug        String     @unique
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  models      CarModel[]
-  cars        Car[]
-  dealerId    String?
-  dealer      Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  ownedModels CarModel[] @relation("OwnedBrandModels")
+  id             String     @id @default(cuid())
+  name           String     @unique
+  slug           String     @unique
+  logoStorageKey String?
+  active         Boolean    @default(true)
+  sortOrder      Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  models         CarModel[]
+  cars           Car[]
+  dealerId       String?
+  dealer         Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ownedModels    CarModel[] @relation("OwnedBrandModels")
 
   @@unique([dealerId, id])
+  @@index([dealerId, active, sortOrder])
 }
 
 model CarModel {
@@ -183,27 +278,54 @@ model DealerDomain {
 }
 
 model DealerSettings {
-  id                String              @id @default("default")
-  dealerName        String              @default("Dynicty Automotive")
-  logoStorageKey    String?
-  whatsappNumber    String?
-  phone             String?
-  email             String?
-  address           String?
-  googleMapsUrl     String?
-  instagramUrl      String?
-  facebookUrl       String?
-  primaryColor      String?
-  secondaryColor    String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  dealerId          String?             @unique
-  dealer            Dealer?             @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  content           DealerContent?
-  contentItems      DealerContentItem[]
-  serviceCategories ServiceCategory[]
-  showroomServices  ShowroomService[]
-  articles          Article[]
+  id                    String                  @id @default("default")
+  dealerName            String                  @default("Dynicty Automotive")
+  logoStorageKey        String?
+  faviconStorageKey     String?
+  whatsappNumber        String?
+  whatsappWidgetEnabled Boolean                 @default(true)
+  whatsappWidgetMessage String                  @default("") @db.VarChar(500)
+  phone                 String?
+  email                 String?
+  address               String?
+  googleMapsUrl         String?
+  instagramUrl          String?
+  facebookUrl           String?
+  primaryColor          String?
+  secondaryColor        String?
+  inventoryMode         InventoryMode           @default(BOTH)
+  inventoryUpdatedAt    DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  dealerId              String?                 @unique
+  dealer                Dealer?                 @relation(fields: [dealerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  content               DealerContent?
+  contentItems          DealerContentItem[]
+  serviceCategories     ServiceCategory[]
+  showroomServices      ShowroomService[]
+  articles              Article[]
+  salesTeam             SalesTeamMember[]
+  serviceCtas           ServiceCtaConfig[]
+  adminMemberships      AdminDealerMembership[]
+  adminInvitations      AdminInvitation[]
+}
+
+model SalesTeamMember {
+  id               String         @id @default(cuid())
+  dealerSettingsId String
+  fullName         String
+  title            String
+  imageStorageKey  String?
+  whatsappNumber   String?
+  biography        String         @default("") @db.Text
+  active           Boolean        @default(false)
+  sortOrder        Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  dealerSettings   DealerSettings @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([dealerSettingsId, id])
+  @@index([dealerSettingsId, active, sortOrder])
 }
 
 enum DealerContentKind {
@@ -216,23 +338,27 @@ enum DealerContentKind {
 }
 
 model DealerContent {
-  dealerId             String         @id
-  welcomeTitle         String         @default("")
-  welcomeBody          String         @default("") @db.Text
-  welcomeActive        Boolean        @default(false)
-  aboutSummary         String         @default("") @db.Text
-  aboutStory           String         @default("") @db.Text
-  history              String         @default("") @db.Text
-  vision               String         @default("") @db.Text
-  mission              String         @default("") @db.Text
-  achievements         String         @default("") @db.Text
-  aboutActive          Boolean        @default(false)
-  showroomKey          String?
-  showroomAlt          String         @default("")
-  operatingHours       String         @default("") @db.Text
-  operatingHoursActive Boolean        @default(false)
-  updatedAt            DateTime       @updatedAt
-  dealer               DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  dealerId                String         @id
+  welcomeTitle            String         @default("")
+  welcomeBody             String         @default("") @db.Text
+  welcomeActive           Boolean        @default(false)
+  welcomeHeadingDesktopPx Int?
+  welcomeHeadingMobilePx  Int?
+  welcomeBodyDesktopPx    Int?
+  welcomeBodyMobilePx     Int?
+  aboutSummary            String         @default("") @db.Text
+  aboutStory              String         @default("") @db.Text
+  history                 String         @default("") @db.Text
+  vision                  String         @default("") @db.Text
+  mission                 String         @default("") @db.Text
+  achievements            String         @default("") @db.Text
+  aboutActive             Boolean        @default(false)
+  showroomKey             String?
+  showroomAlt             String         @default("")
+  operatingHours          String         @default("") @db.Text
+  operatingHoursActive    Boolean        @default(false)
+  updatedAt               DateTime       @updatedAt
+  dealer                  DealerSettings @relation(fields: [dealerId], references: [id], onDelete: Cascade)
 }
 
 model DealerContentItem {
@@ -292,10 +418,54 @@ model ShowroomService {
   updatedAt        DateTime                 @updatedAt
   dealerSettings   DealerSettings           @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   category         ServiceCategory          @relation(fields: [dealerSettingsId, categoryId], references: [dealerSettingsId, id], onDelete: Restrict, onUpdate: Restrict)
+  cta              ServiceCtaConfig?
 
+  @@unique([dealerSettingsId, id])
   @@unique([dealerSettingsId, slug])
   @@index([dealerSettingsId, status, homepageVisible, sortOrder])
   @@index([dealerSettingsId, categoryId])
+}
+
+model ServiceCtaConfig {
+  id                   String             @id @default(cuid())
+  dealerSettingsId     String
+  serviceId            String
+  enabled              Boolean            @default(false)
+  heading              String             @default("")
+  description          String             @default("") @db.Text
+  headingDesktopPx     Int                @default(40)
+  descriptionDesktopPx Int                @default(18)
+  headingMobilePx      Int                @default(28)
+  descriptionMobilePx  Int                @default(16)
+  backgroundColor      String             @default("#C8102E") @db.VarChar(7)
+  textColor            String             @default("#FFFFFF") @db.VarChar(7)
+  imageStorageKey      String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  dealerSettings       DealerSettings     @relation(fields: [dealerSettingsId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  service              ShowroomService    @relation(fields: [dealerSettingsId, serviceId], references: [dealerSettingsId, id], onDelete: Cascade, onUpdate: Restrict)
+  buttons              ServiceCtaButton[]
+
+  @@unique([dealerSettingsId, id])
+  @@unique([dealerSettingsId, serviceId])
+  @@index([dealerSettingsId, enabled])
+}
+
+model ServiceCtaButton {
+  id               String           @id @default(cuid())
+  dealerSettingsId String
+  serviceCtaId     String
+  label            String
+  whatsappNumber   String
+  backgroundColor  String           @default("#111111") @db.VarChar(7)
+  textColor        String           @default("#FFFFFF") @db.VarChar(7)
+  sortOrder        Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  cta              ServiceCtaConfig @relation(fields: [dealerSettingsId, serviceCtaId], references: [dealerSettingsId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([dealerSettingsId, id])
+  @@index([dealerSettingsId, serviceCtaId, sortOrder])
 }
 
 model Article {

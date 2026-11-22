@@ -1,0 +1,7 @@
+import { AccountForms } from "@/features/auth/account-forms";
+import { AdminPageHeader, AdminSection } from "@/components/admin/admin-ui";
+import { Button } from "@/components/ui/button";
+import { db } from "@/db/client";
+import { requireAdmin } from "@/server/auth/session";
+import { revokeSessionAction } from "@/server/auth/account-actions";
+export default async function AccountPage(){const admin=await requireAdmin();const sessions=await db.adminSession.findMany({where:{adminId:admin.id,expiresAt:{gt:new Date()}},orderBy:{createdAt:"desc"}});return <div className="mx-auto grid max-w-5xl gap-6"><AdminPageHeader eyebrow="Keamanan" title="Akun & Kepemilikan" description="Kelola identitas login, sesi aktif, dan serahkan website kepada pembeli tanpa membagikan kata sandi."/><AccountForms name={admin.name} email={admin.email} isOwner={admin.membership.role==="OWNER"}/><AdminSection title="Sesi saya"><div className="grid gap-3">{sessions.map(session=><div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 p-4" key={session.id}><p className="text-sm">Dibuat {session.createdAt.toLocaleString("id-ID",{timeZone:"Asia/Jakarta"})}{session.id===admin.sessionId?" · sesi ini":""}</p><form action={revokeSessionAction}><input name="sessionId" type="hidden" value={session.id}/><Button type="submit" variant="secondary">Cabut sesi</Button></form></div>)}</div></AdminSection></div>}

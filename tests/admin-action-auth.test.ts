@@ -10,6 +10,7 @@ import * as cars from "@/server/cars/actions";
 import * as settings from "@/server/settings/actions";
 import * as master from "@/server/master-data/actions";
 import * as content from "@/server/content/actions";
+import * as sales from "@/server/sales-team/actions";
 
 const empty = { message: "", errors: {} };
 const form = () => new FormData();
@@ -29,6 +30,9 @@ const actions = [
   { name: "save content profile", run: () => content.saveDealerContentAction(empty, form()) },
   { name: "save content item", run: () => content.saveContentItemAction(empty, form()) },
   { name: "delete content item", run: () => content.deleteContentItemAction(empty, form()) },
+  { name: "create default advantages", run: () => content.createDefaultAdvantagesAction(empty, form()) },
+  { name: "save sales member", run: () => sales.saveSalesTeamAction(empty, form()) },
+  { name: "delete sales member", run: () => sales.deleteSalesTeamAction(empty, form()) },
 ];
 
 beforeEach(() => { vi.resetAllMocks(); });

@@ -2,11 +2,15 @@ export const HOMEPAGE_CAR_LIMIT = 6;
 
 export type PublicCarStatus = "DRAFT" | "AVAILABLE" | "SOLD";
 export type PublicCarCondition = "NEW" | "USED";
+export type InventoryMode = "BOTH" | "USED_ONLY" | "NEW_ONLY";
 
 export type DealerPresentation = {
   dealerName: string;
   logoUrl: string | null;
+  faviconUrl?: string | null;
   whatsappNumber: string | null;
+  whatsappWidgetEnabled?: boolean;
+  whatsappWidgetMessage?: string;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -15,12 +19,16 @@ export type DealerPresentation = {
   facebookUrl: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
+  inventoryMode?: InventoryMode;
 };
 
 export const dealerFallback: DealerPresentation = {
   dealerName: "Dynicty Automotive",
   logoUrl: null,
+  faviconUrl: null,
   whatsappNumber: null,
+  whatsappWidgetEnabled: true,
+  whatsappWidgetMessage: "",
   phone: null,
   email: null,
   address: null,
@@ -29,7 +37,23 @@ export const dealerFallback: DealerPresentation = {
   facebookUrl: null,
   primaryColor: null,
   secondaryColor: null,
+  inventoryMode: "BOTH",
 };
+
+export function inventoryCondition(mode: InventoryMode): PublicCarCondition | undefined {
+  return mode === "USED_ONLY" ? "USED" : mode === "NEW_ONLY" ? "NEW" : undefined;
+}
+
+export function inventoryCopy(mode: InventoryMode) {
+  if (mode === "USED_ONLY") return { label: "Mobil Bekas", description: "Temukan mobil bekas berkualitas pilihan kami.", metadata: "Mobil Bekas" };
+  if (mode === "NEW_ONLY") return { label: "Mobil Baru", description: "Temukan mobil baru pilihan yang tersedia dari dealer kami.", metadata: "Mobil Baru" };
+  return { label: "Mobil Baru & Bekas", description: "Temukan kendaraan pilihan yang sesuai dengan kebutuhan Anda.", metadata: "Mobil Baru & Bekas" };
+}
+
+export function constrainInventoryCondition<T extends { condition?: PublicCarCondition }>(filters: T, mode: InventoryMode): T {
+  const condition = inventoryCondition(mode);
+  return condition ? { ...filters, condition } : filters;
+}
 
 export function isHomepageCarVisible(status: PublicCarStatus) {
   return status === "AVAILABLE";
@@ -56,6 +80,13 @@ export function shouldShowMileage(condition: PublicCarCondition, mileage: number
   return condition === "USED" && mileage !== null && mileage > 0;
 }
 
+export type StockSummary = { availableCount: number; lastUpdatedAt: Date | null };
+
+export function formatStockUpdateDate(value: Date | null) {
+  if (!value || Number.isNaN(value.getTime())) return null;
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(value);
+}
+
 export function normalizeWhatsappNumber(value: string | null | undefined) {
   if (!value) return null;
   const input = value.trim();
@@ -67,9 +98,11 @@ export function normalizeWhatsappNumber(value: string | null | undefined) {
   return /^\d{10,15}$/.test(digits) ? digits : null;
 }
 
-export function createWhatsappUrl(value: string | null | undefined) {
+export function createWhatsappUrl(value: string | null | undefined, message?: string | null) {
   const number = normalizeWhatsappNumber(value);
-  return number ? `https://wa.me/${number}` : null;
+  if (!number) return null;
+  const text = message?.trim();
+  return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
 
 export type HomepageSearchInput = {
@@ -91,8 +124,9 @@ export function createHomepageSearchParams(input: HomepageSearchInput) {
 }
 
 export function mergeDealerPresentation(
-  settings: Partial<Omit<DealerPresentation, "logoUrl">> | null,
+  settings: Partial<Omit<DealerPresentation, "logoUrl" | "faviconUrl">> | null,
   logoUrl: string | null = null,
+  faviconUrl: string | null = null,
 ): DealerPresentation {
   const clean = (value: string | null | undefined, fallback: string | null = null) => {
     const normalized = value?.trim();
@@ -101,7 +135,10 @@ export function mergeDealerPresentation(
   return {
     dealerName: clean(settings?.dealerName, dealerFallback.dealerName)!,
     logoUrl,
+    faviconUrl,
     whatsappNumber: clean(settings?.whatsappNumber),
+    whatsappWidgetEnabled: settings?.whatsappWidgetEnabled ?? dealerFallback.whatsappWidgetEnabled,
+    whatsappWidgetMessage: clean(settings?.whatsappWidgetMessage, "") ?? "",
     phone: clean(settings?.phone),
     email: clean(settings?.email),
     address: clean(settings?.address),
@@ -110,5 +147,6 @@ export function mergeDealerPresentation(
     facebookUrl: clean(settings?.facebookUrl),
     primaryColor: clean(settings?.primaryColor),
     secondaryColor: clean(settings?.secondaryColor),
+    inventoryMode: settings?.inventoryMode ?? dealerFallback.inventoryMode,
   };
 }

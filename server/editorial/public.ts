@@ -10,7 +10,7 @@ export const publicPage = (value: string | string[] | undefined) => {
   return raw && /^[1-9]\d{0,3}$/.test(raw) ? Math.min(1000, Number(raw)) : 1;
 };
 function presentation<T extends { id: string; slug: string; title: string; body: string; imageStorageKey: string | null; imageAlt: string; updatedAt: Date }>(row: T) {
-  return { id: row.id, slug: row.slug, title: row.title, body: row.body, imageUrl: editorialImageUrl(row.imageStorageKey), imageAlt: row.imageAlt, updatedAt: row.updatedAt };
+  return { id: row.id, slug: row.slug, title: row.title, body: row.body, imageUrl: editorialImageUrl(row.imageStorageKey), imageAlt: row.imageAlt.trim() || row.title, updatedAt: row.updatedAt };
 }
 export async function getPublicEditorialList(kind: "service" | "article", page = 1, category?: string) {
   const slug = category && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) && category.length <= 100 ? category : undefined;
@@ -23,7 +23,9 @@ export async function getPublicEditorialList(kind: "service" | "article", page =
 // Request-local memoization only: never a shared cross-installation cache.
 export const getPublicEditorialDetail = cache(async (kind: "service" | "article", slug: string) => {
   const row = await getPublishedEditorialBySlug(kind, slug);
-  return row ? { ...presentation(row), summary: "excerpt" in row ? row.excerpt : row.shortDescription, publishedAt: "publishedAt" in row ? row.publishedAt : null } : null;
+  if (!row) return null;
+  const cta = "cta" in row && row.cta?.enabled ? { ...row.cta, imageUrl: editorialImageUrl(row.cta.imageStorageKey) } : null;
+  return { ...presentation(row), summary: "excerpt" in row ? row.excerpt : row.shortDescription, publishedAt: "publishedAt" in row ? row.publishedAt : null, cta };
 });
 export async function getHomepageServices() {
   try { return (await getPublishedServices(1, undefined, true)).slice(0, 6).map(row => ({ ...presentation(row), summary: row.shortDescription })); }

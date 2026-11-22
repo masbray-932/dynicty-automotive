@@ -53,6 +53,41 @@ export function readableForeground(background: string): "#000000" | "#FFFFFF" {
   return contrastRatio(background, "#000000") >= contrastRatio(background, "#FFFFFF") ? "#000000" : "#FFFFFF";
 }
 
+export const DEFAULT_STOREFRONT_HEADER = "#671B27";
+export const STOREFRONT_MOBILE_NAV = "#19201F";
+export const AUTO18_STOREFRONT_GRADIENT = "linear-gradient(110deg, #650B16 0%, #990015 55%, #C90016 100%)";
+
+function mixThemeColors(foreground: string, background: string, foregroundWeight: number) {
+  const foregroundColor = normalizeThemeColor(foreground);
+  const backgroundColor = normalizeThemeColor(background);
+  if (!foregroundColor || !backgroundColor) throw new Error("Invalid theme color.");
+  const channel = (offset: number) => Math.round(
+    Number.parseInt(foregroundColor.slice(offset, offset + 2), 16) * foregroundWeight
+      + Number.parseInt(backgroundColor.slice(offset, offset + 2), 16) * (1 - foregroundWeight),
+  ).toString(16).padStart(2, "0");
+  return `#${channel(1)}${channel(3)}${channel(5)}`.toUpperCase();
+}
+
+export function storefrontHeaderColor(primary: string | null | undefined) {
+  const candidate = normalizeThemeColor(primary);
+  if (!candidate || contrastRatio(candidate, "#FFFFFF") < 4.5) return DEFAULT_STOREFRONT_HEADER;
+  // Preserve already restrained brand colors. Brighter colors are toned with the
+  // shared navigation neutral so the header remains branded without allowing a
+  // high-chroma primary to dominate the whole storefront shell.
+  return contrastRatio(candidate, "#FFFFFF") >= 8
+    ? candidate
+    : mixThemeColors(candidate, STOREFRONT_MOBILE_NAV, 0.48);
+}
+
+export function storefrontHeaderBackground(primary: string | null | undefined) {
+  const candidate = normalizeThemeColor(primary);
+  // The approved gradient is selected by the dealer's existing brand token;
+  // other tenants retain their independently derived header color.
+  return candidate === "#C8102E"
+    ? AUTO18_STOREFRONT_GRADIENT
+    : storefrontHeaderColor(candidate);
+}
+
 export function resolveAutomotiveTheme(overrides: unknown = null) {
   const tokens: CanonicalTokens = { ...AUTOMOTIVE_TOKEN_DEFAULTS };
   let hasCustomAccent = false;

@@ -10,8 +10,10 @@ import type { InventoryContext } from "@/server/inventory/context";
 import { legacyStorefrontContext, requireLegacyStorefront } from "@/server/storefront/context";
 import { legacyStorefrontInventory } from "@/server/storefront/inventory";
 import { legacyVehicleImageUrl } from "@/server/storefront/media";
+import { inventoryCondition, type InventoryMode } from "@/features/homepage/domain";
 
 export type PublicCarDetail = {
+  id: string;
   slug: string;
   title: string;
   condition: "NEW" | "USED";
@@ -42,8 +44,8 @@ function toCard(car: {
   return { id: car.id, slug: car.slug, condition: car.condition, brand: car.brand.name, model: car.model.name, variant: car.variant, year: car.year, price: car.price.toString(), transmission: car.transmission, mileage: car.mileage, imageUrl: legacyVehicleImageUrl(car.id, car.images[0]?.storageKey) };
 }
 
-async function relatedCars(scope: ReturnType<typeof legacyStorefrontInventory>, current: { id: string; brandId: string; modelId: string }) {
-  const base = { ...scope.car, id: { not: current.id } };
+async function relatedCars(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode, current: { id: string; brandId: string; modelId: string }) {
+  const base = { ...scope.car, ...(inventoryCondition(mode) ? { condition: inventoryCondition(mode) } : {}), id: { not: current.id } };
   const [sameModel, sameBrand, others] = await Promise.all([
     db.car.findMany({ where: { ...base, modelId: current.modelId }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect(scope) }),
     db.car.findMany({ where: { ...base, brandId: current.brandId, modelId: { not: current.modelId } }, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 3, select: relatedSelect(scope) }),
@@ -53,12 +55,12 @@ async function relatedCars(scope: ReturnType<typeof legacyStorefrontInventory>, 
 }
 
 // Request-local memoization for the fixed legacy scope only.
-const getLegacyCarDetailPageData = cache(async (slug: string) => {
+const getLegacyCarDetailPageData = cache(async (slug: string, mode: InventoryMode) => {
   const scope = legacyStorefrontInventory(legacyStorefrontContext);
   if (!isValidCarSlug(slug)) return { kind: "not-found" as const };
   try {
     const car = await db.car.findFirst({
-      where: { ...scope.car, slug },
+      where: { ...scope.car, ...(inventoryCondition(mode) ? { condition: inventoryCondition(mode) } : {}), slug },
       select: {
         id: true, slug: true, condition: true, brandId: true, modelId: true, variant: true, year: true, price: true,
         transmission: true, fuelType: true, color: true, mileage: true, description: true, updatedAt: true,
@@ -72,9 +74,9 @@ const getLegacyCarDetailPageData = cache(async (slug: string) => {
       const url = legacyVehicleImageUrl(car.id, storageKey);
       return url ? [{ ...image, url }] : [];
     }));
-    const [dealer, related] = await Promise.all([getDealerPresentation(), relatedCars(scope, car)]);
+    const [dealer, related] = await Promise.all([getDealerPresentation(), relatedCars(scope, mode, car)]);
     const detail: PublicCarDetail = {
-      slug: car.slug, title, condition: car.condition, brand: car.brand, model: car.model, variant: car.variant, year: car.year,
+      id: car.id, slug: car.slug, title, condition: car.condition, brand: car.brand, model: car.model, variant: car.variant, year: car.year,
       price: car.price.toString(), transmission: car.transmission, fuelType: car.fuelType, color: car.color, mileage: car.mileage,
       description: car.description, updatedAt: car.updatedAt,
       images: ordered.map((image, index) => ({ id: image.id, url: image.url, isPrimary: image.isPrimary, alt: `Foto ${title}${index ? ` ${index + 1}` : ""}` })),
@@ -88,13 +90,16 @@ const getLegacyCarDetailPageData = cache(async (slug: string) => {
 
 export async function getCarDetailPageData(context: InventoryContext, slug: string) {
   requireLegacyStorefront(context);
-  return getLegacyCarDetailPageData(slug);
+  const dealer = await getDealerPresentation();
+  return getLegacyCarDetailPageData(slug, dealer.inventoryMode ?? "BOTH");
 }
 
 export async function getAvailableCarSitemapEntries(context: InventoryContext) {
   const scope = legacyStorefrontInventory(context);
   try {
-    return await db.car.findMany({ where: scope.car, orderBy: { updatedAt: "desc" }, take: 5000, select: { slug: true, updatedAt: true } });
+    const dealer = await getDealerPresentation();
+    const mode = dealer.inventoryMode ?? "BOTH";
+    return await db.car.findMany({ where: { ...scope.car, ...(inventoryCondition(mode) ? { condition: inventoryCondition(mode) } : {}) }, orderBy: { updatedAt: "desc" }, take: 5000, select: { slug: true, updatedAt: true } });
   } catch {
     logger.error("public.sitemap_query_failed");
     return [];

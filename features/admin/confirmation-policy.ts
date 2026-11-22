@@ -46,7 +46,9 @@ export function settingsConfirmation(original: Values, data: FormData): Confirma
   const normalized = new FormData();
   for (const [key, value] of data) normalized.set(key, value);
   const effective = { ...original, dealerName: original.dealerName ?? "Dynicty Automotive" };
-  const changes = changesFor(effective, normalized, { dealerName: "Nama dealer", whatsappNumber: "WhatsApp", phone: "Telepon", email: "Email", address: "Alamat showroom", googleMapsUrl: "Lokasi Maps", instagramUrl: "Instagram", facebookUrl: "Facebook" });
+  const managesWidget = data.has("whatsappWidgetMessage") || Object.hasOwn(original, "whatsappWidgetEnabled") || Object.hasOwn(original, "whatsappWidgetMessage");
+  if (managesWidget) normalized.set("whatsappWidgetEnabled", data.get("whatsappWidgetEnabled") === "on" ? "true" : "false");
+  const changes = changesFor(effective, normalized, { dealerName: "Nama dealer", inventoryMode: "Mode inventaris publik", whatsappNumber: "WhatsApp", ...(managesWidget ? { whatsappWidgetEnabled: "Widget WhatsApp", whatsappWidgetMessage: "Pesan widget WhatsApp" } : {}), phone: "Telepon", email: "Email", address: "Alamat showroom", googleMapsUrl: "Lokasi Maps", instagramUrl: "Instagram", facebookUrl: "Facebook" });
   return changes.length ? { ...criticalAction("Ubah identitas atau kontak dealer?", "Pengunjung menggunakan informasi ini untuk menghubungi dan menemukan dealer."), changes } : null;
 }
 export function profileConfirmation(original: Values | null, data: FormData): Confirmation | null {
@@ -54,6 +56,7 @@ export function profileConfirmation(original: Values | null, data: FormData): Co
     const before = Boolean(original?.[name]); const after = data.get(name) === "on";
     return before === after ? [] : [{ label: ({ welcomeActive: "Welcome", aboutActive: "Tentang kami", operatingHoursActive: "Jam operasional" } as Record<string, string>)[name], before: before ? "Aktif" : "Nonaktif", after: after ? "Aktif" : "Nonaktif" }];
   });
+  changes.push(...changesFor(original ?? {}, data, { welcomeHeadingDesktopPx: "Judul sambutan desktop", welcomeHeadingMobilePx: "Judul sambutan mobile", welcomeBodyDesktopPx: "Deskripsi sambutan desktop", welcomeBodyMobilePx: "Deskripsi sambutan mobile" }));
   if (original?.showroomKey && (hasFile(data, "image") || data.get("removeImage") === "on")) changes.push({ label: "Foto showroom", before: "Tersimpan", after: hasFile(data, "image") ? "Diganti" : "Dihapus" });
   if ((original?.operatingHoursActive || data.get("operatingHoursActive") === "on") && text(original?.operatingHours) !== text(data.get("operatingHours"))) changes.push({ label: "Jam operasional", before: text(original?.operatingHours), after: text(data.get("operatingHours")) });
   return changes.length ? { ...criticalAction("Ubah publikasi atau informasi operasional?", "Perubahan ini memengaruhi bagian website atau informasi kunjungan dealer."), changes } : null;

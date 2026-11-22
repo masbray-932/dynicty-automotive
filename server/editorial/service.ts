@@ -112,17 +112,19 @@ export async function deleteEditorial(kind: EditorialKind, id: string) {
       return { slug: existing.slug, oldKey: null };
     }
     if (kind === "service") {
-      const existing = await tx.showroomService.findFirst({ where: { ...owner, id } });
+      const existing = await tx.showroomService.findFirst({ where: { ...owner, id }, include: { cta: { select: { imageStorageKey: true } } } });
       if (!existing) throw new EditorialError("Layanan tidak ditemukan.");
       await tx.showroomService.delete({ where: { ...owner, id } });
-      return { slug: existing.slug, oldKey: existing.imageStorageKey };
+      return { slug: existing.slug, oldKey: existing.imageStorageKey, ctaOldKey: existing.cta?.imageStorageKey ?? null };
     }
     const existing = await tx.article.findFirst({ where: { ...owner, id } });
     if (!existing) throw new EditorialError("Artikel tidak ditemukan.");
     await tx.article.delete({ where: { ...owner, id } });
     return { slug: existing.slug, oldKey: existing.imageStorageKey };
   });
-  return { ...result, cleanupFailed: await cleanup(result.oldKey) };
+  const cleanupFailed = await cleanup(result.oldKey);
+  const ctaCleanupFailed = "ctaOldKey" in result ? await cleanup(result.ctaOldKey ?? null) : false;
+  return { ...result, cleanupFailed: cleanupFailed || ctaCleanupFailed };
 }
 
 export function editorialImageUrl(key: string | null) {
@@ -134,7 +136,7 @@ export async function getAdminEditorial(page = 1) {
   const skip = (Math.min(1000, Math.max(1, Math.floor(page) || 1)) - 1) * 20;
   const [categories, services, articles, serviceCount, articleCount] = await Promise.all([
     db.serviceCategory.findMany({ where: owner, orderBy: [{ sortOrder: "asc" }, { id: "asc" }], take: 100 }),
-    db.showroomService.findMany({ where: owner, orderBy: [{ sortOrder: "asc" }, { id: "asc" }], skip, take: 20 }),
+    db.showroomService.findMany({ where: owner, orderBy: [{ sortOrder: "asc" }, { id: "asc" }], skip, take: 20, include: { cta: { include: { buttons: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } } } } }),
     db.article.findMany({ where: owner, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], skip, take: 20 }),
     db.showroomService.count({ where: owner }), db.article.count({ where: owner }),
   ]);
@@ -155,6 +157,6 @@ export async function getPublishedArticles(page = 1) {
 export async function getPublishedEditorialBySlug(kind: "service" | "article", slug: string) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 100) return null;
   return kind === "service"
-    ? db.showroomService.findFirst({ where: { ...publishedEditorialWhere("service"), slug } })
+    ? db.showroomService.findFirst({ where: { ...publishedEditorialWhere("service"), slug }, include: { cta: { include: { buttons: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } } } } })
     : db.article.findFirst({ where: { ...publishedEditorialWhere("article"), slug } });
 }

@@ -17,7 +17,7 @@ vi.mock("@/features/cars/car-form", () => ({ CarForm: () => <span>Car form</span
 vi.mock("@/features/cars/image-manager", () => ({ ImageManager: () => <span>Images</span> }));
 vi.mock("@/features/settings/dealer-settings-form", () => ({ DealerSettingsForm: () => <span>Settings form</span> }));
 vi.mock("@/features/master-data/master-data-forms", () => ({ BrandForm: () => <span>Brand form</span>, ModelForm: () => <span>Model form</span> }));
-vi.mock("@/features/content/content-editor", () => ({ ProfileEditor: () => <span>Private CMS editor</span>, ItemEditor: () => <span>Item editor</span> }));
+vi.mock("@/features/content/content-editor", () => ({ ProfileEditor: () => <span>Private CMS editor</span>, ItemEditor: () => <span>Item editor</span>, DeleteItemForm: () => <button>Delete item</button> }));
 
 import Dashboard from "@/app/admin/(protected)/page";
 import Brands from "@/app/admin/(protected)/brands/page";
@@ -34,7 +34,7 @@ const pages = [
   { name: "new car", render: () => NewCar(), text: "Tambah Mobil" },
   { name: "edit car", render: () => EditCar({ params: Promise.resolve({ id: "private-car" }), searchParams: Promise.resolve({}) }), text: "PRIVATE-BRAND" },
   { name: "settings", render: () => Settings(), text: "Pengaturan Dealer" },
-  { name: "content", render: () => Content(), text: "Private CMS editor" },
+  { name: "content", render: () => Content({}), text: "Private CMS editor" },
 ];
 const reads = () => [mocks.dashboard, mocks.settings, mocks.content, mocks.brands, mocks.cars, mocks.car];
 

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactNode } from "react";
 vi.mock("next/image", () => ({ default: ({ src, alt, unoptimized, sizes }: { src: string; alt: string; unoptimized?: boolean; sizes?: string }) => <span role="img" aria-label={alt} data-src={src} data-direct={String(Boolean(unoptimized))} data-sizes={sizes} /> }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a> }));
+vi.mock("next/navigation",()=>({usePathname:()=>"/"}));
 import { shouldBypassImageOptimization } from "@/lib/image-delivery";
 import { VehicleCard } from "@/features/homepage/vehicle-card";
 import { VehicleGallery } from "@/features/car-detail/gallery";
@@ -28,7 +29,7 @@ describe("public persistent media rendering", () => {
     expect(html).toContain('data-direct="true"');
   });
   it("covers showroom and leasing logos", () => {
-    const content = { profile: { history: "", vision: "", mission: "", achievements: "", dealerId: "default", welcomeTitle: "", welcomeBody: "", welcomeActive: false, aboutSummary: "Story", aboutStory: "Story", aboutActive: true, showroomKey: "showroom", showroomAlt: "Showroom", operatingHours: "", operatingHoursActive: false, updatedAt: new Date() }, showroomUrl: "/uploads/showroom.jpg", items: [{ id: "p", kind: "LEASING_PARTNER" as const, title: "Partner", body: "", link: "", active: true, sortOrder: 0, mediaUrl: "/uploads/partner.png" }] };
+    const content = { profile: { history: "", vision: "", mission: "", achievements: "", dealerId: "default", welcomeTitle: "", welcomeBody: "", welcomeActive: false, welcomeHeadingDesktopPx: null, welcomeHeadingMobilePx: null, welcomeBodyDesktopPx: null, welcomeBodyMobilePx: null, aboutSummary: "Story", aboutStory: "Story", aboutActive: true, showroomKey: "showroom", showroomAlt: "Showroom", operatingHours: "", operatingHoursActive: false, updatedAt: new Date() }, showroomUrl: "/uploads/showroom.jpg", items: [{ id: "p", kind: "LEASING_PARTNER" as const, title: "Partner", body: "", link: "", active: true, sortOrder: 0, mediaUrl: "/uploads/partner.png" }] };
     const html = renderToStaticMarkup(<><AboutSection content={content} /><LeasingSection content={content} /></>);
     expect(html.match(/data-direct="true"/g)).toHaveLength(2);
   });
