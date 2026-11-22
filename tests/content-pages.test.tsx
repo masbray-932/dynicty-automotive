@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { absoluteSiteUrl } from "@/lib/site-url";
 const data=vi.hoisted(()=>({dealer:{dealerName:"Dealer Test",logoUrl:null,whatsappNumber:"6281234567890",phone:null,email:null,address:"Alamat showroom test",googleMapsUrl:"https://maps.google.com/test",instagramUrl:null,facebookUrl:null,primaryColor:null,secondaryColor:null,inventoryMode:"BOTH" as "BOTH"|"USED_ONLY"|"NEW_ONLY"},content:{profile:{dealerId:"default",welcomeTitle:"Selamat Datang",welcomeBody:"Informasi dealer test.",welcomeActive:true,aboutSummary:"Ringkasan dealer test.",aboutStory:"Cerita dealer test.",aboutActive:true,showroomKey:null,showroomAlt:"",operatingHours:"Senin 09:00–17:00",operatingHoursActive:true,updatedAt:new Date()},showroomUrl:null,items:[{id:"hero",kind:"MAIN_BANNER",title:"Banner test",body:"",link:"/cars",active:true,sortOrder:0,mediaUrl:"/uploads/banner.jpg"},{id:"promo",kind:"PROMO_BANNER",title:"Promo test",body:"",link:"",active:true,sortOrder:0,mediaUrl:"/uploads/promo.jpg"},{id:"advantage",kind:"ADVANTAGE",title:"Keunggulan test",body:"Fakta test",link:"",active:true,sortOrder:0,mediaUrl:null},{id:"testimonial",kind:"TESTIMONIAL",title:"Pelanggan test",body:"Testimoni yang diizinkan.",link:"",active:true,sortOrder:0,mediaUrl:null},{id:"faq",kind:"FAQ",title:"Pertanyaan test",body:"Jawaban test",link:"",active:true,sortOrder:0,mediaUrl:null},{id:"partner",kind:"LEASING_PARTNER",title:"Partner test",body:"",link:"",active:true,sortOrder:0,mediaUrl:"/uploads/partner.jpg"}]}}));
 vi.mock("server-only",()=>({}));
 vi.mock("@/server/dealer/registry",()=>({resolveDealerDomain:vi.fn()}));
@@ -30,7 +31,7 @@ describe("dealer content page wiring (mocked reads)",()=>{
   });
   it("uses the same profile and factual advantages on /about",async()=>{
     const html=renderToStaticMarkup(await AboutPage());expect(html).toContain("Cerita dealer test.");expect(html).toContain("Keunggulan test");expect(html).toContain("Senin 09:00–17:00");expect(html).toContain('href="/cars"');
-    const metadata=await aboutMetadata();expect(metadata.alternates?.canonical).toBe("http://localhost:3000/about");expect(metadata.description).toBe(data.content.profile.aboutSummary);
-    expect((await homeMetadata()).alternates?.canonical).toBe("http://localhost:3000/");
+    const metadata=await aboutMetadata();expect(metadata.alternates?.canonical).toBe(absoluteSiteUrl("/about"));expect(metadata.description).toBe(data.content.profile.aboutSummary);
+    expect((await homeMetadata()).alternates?.canonical).toBe(absoluteSiteUrl("/"));
   });
 });

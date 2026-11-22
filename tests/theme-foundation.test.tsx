@@ -17,6 +17,7 @@ import {
 } from "@/features/theme/domain";
 import { ThemeScope } from "@/features/theme/theme-scope";
 
+vi.mock("server-only", () => ({}));
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "geist-sans" }),
   Geist_Mono: () => ({ variable: "geist-mono" }),
