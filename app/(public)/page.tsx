@@ -19,10 +19,9 @@ import { formatStockUpdateDate, inventoryCopy } from "@/features/homepage/domain
 import { publicMetadata } from "@/server/editorial/metadata";
 export async function generateMetadata(): Promise<Metadata> {
   await connection(); const dealer=await getDealerPresentation();
-  const copy=inventoryCopy(dealer.inventoryMode ?? "BOTH");
-  const title=`${dealer.dealerName} — ${copy.metadata}`;
-  const description=`Jelajahi ${copy.metadata.toLowerCase()} yang tersedia dari ${dealer.dealerName}.`;
-  return publicMetadata(copy.metadata, description, "/", { fullTitle: title, image: dealer.logoUrl ? { url: dealer.logoUrl, alt: `Logo ${dealer.dealerName}` } : null });
+  const title="Auto Eighteen - Pusat Jual Beli Mobil Bekas Berkualitas Dan Bergaransi";
+  const description="Auto Eighteen adalah pusat jual beli mobil bekas berkualitas dan bergaransi. Melayani pembelian Cash, Credit & Trade In. Cari mobil impian Anda hanya di Auto18.";
+  return publicMetadata(title, description, "/", { fullTitle: title, image: dealer.logoUrl ? { url: dealer.logoUrl, alt: `Logo ${dealer.dealerName}` } : null });
 }
 export default async function HomePage() {
   await connection();
