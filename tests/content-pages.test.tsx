@@ -5,28 +5,29 @@ const data=vi.hoisted(()=>({dealer:{dealerName:"Dealer Test",logoUrl:null,whatsa
 vi.mock("server-only",()=>({}));
 vi.mock("@/server/dealer/registry",()=>({resolveDealerDomain:vi.fn()}));
 vi.mock("next/server",()=>({connection:vi.fn()}));
+vi.mock("next/navigation",()=>({useRouter:()=>({push:vi.fn()})}));
 vi.mock("next/image",()=>({default:({alt,src}: {alt:string;src:string})=><span role="img" aria-label={alt} data-src={src} />}));
 vi.mock("next/link",()=>({default:({children,...props}:{children:React.ReactNode;href:string})=><a {...props}>{children}</a>}));
 vi.mock("@/server/content/service",()=>({getPublicDealerContent:async()=>data.content}));
-vi.mock("@/server/homepage/service",()=>({getDealerPresentation:async()=>data.dealer,getHomepageData:async()=>({dealer:data.dealer,brands:[{name:"Toyota",slug:"toyota",logoUrl:"/uploads/toyota.webp",availableCars:3,models:[]}],featuredCars:Array.from({length:3},(_,i)=>({id:`featured-${i}`,slug:`car-${i}`,condition:"NEW",brand:"Test",model:"Model",variant:"Variant",year:2026,price:"100000000",transmission:"Automatic",mileage:null,imageUrl:null})),latestCars:Array.from({length:6},(_,i)=>({id:`latest-${i}`,slug:`latest-${i}`,condition:"USED",brand:"Test",model:"Model",variant:"Variant",year:2025,price:"90000000",transmission:"Automatic",mileage:1000,imageUrl:null}))})}));
+vi.mock("@/server/homepage/service",()=>({getDealerPresentation:async()=>data.dealer,getHomepageData:async()=>({dealer:data.dealer,brands:[{name:"Toyota",slug:"toyota",logoUrl:"/uploads/toyota.webp",availableCars:3,models:[]}],cars:Array.from({length:6},(_,i)=>({id:`car-${i}`,slug:`car-${i}`,condition:i<3?"NEW":"USED",brand:"Test",model:"Model",variant:"Variant",year:2026,price:"100000000",transmission:"Automatic",mileage:i<3?null:1000,imageUrl:null})),inventoryPage:1,inventoryTotalPages:3,stockSummary:{availableCount:18,lastUpdatedAt:null}})}));
 vi.mock("@/server/editorial/public",()=>({getHomepageServices:async()=>[]}));
 vi.mock("@/server/sales-team/service",()=>({getPublicSalesTeam:async()=>[]}));
 import HomePage,{generateMetadata as homeMetadata} from "@/app/(public)/page";
 import AboutPage,{generateMetadata as aboutMetadata} from "@/app/(public)/about/page";
 describe("dealer content page wiring (mocked reads)",()=>{
   it("wires agreed Homepage sections and limits displayed inventory to six",async()=>{
-    const html=renderToStaticMarkup(await HomePage());
+    const html=renderToStaticMarkup(await HomePage({searchParams:Promise.resolve({})}));
     for(const text of ["Banner utama","Selamat Datang","Promo &amp; Kategori Merek","Daftar Stok Mobil","Sekilas Tentang Kami","Mengapa Memilih Dealer Test?","Apa Kata Pelanggan Kami","Pelanggan test","Partner Leasing","Pertanyaan yang Sering Diajukan","Hubungi Dealer Test"])expect(html).toContain(text);
     expect(html).not.toContain("Pencarian mobil");expect(html).not.toContain('name="minPrice"');expect(html).not.toContain('name="maxPrice"');
     expect(html).toContain('href="/cars?brand=toyota"');expect(html).toContain("3 mobil tersedia");expect(html).toContain("Logo Toyota");
-    expect(html).toContain('/cars/latest-2');expect(html).not.toContain('/cars/latest-3');expect(html).toContain('href="https://wa.me/6281234567890"');
+    expect(html).toContain('/cars/car-5');expect(html).not.toContain('/cars/car-6');expect(html).toContain('href="https://wa.me/6281234567890"');
   });
   it("keeps homepage inventory CTAs scoped to each dealer mode",async()=>{
     data.dealer.inventoryMode="USED_ONLY";
-    const used=renderToStaticMarkup(await HomePage());
+    const used=renderToStaticMarkup(await HomePage({searchParams:Promise.resolve({})}));
     expect(used).not.toContain('href="/cars?condition=NEW"');expect(used).toContain('href="/cars?condition=USED"');expect(used).toContain('href="/cars"');
     data.dealer.inventoryMode="BOTH";
-    const both=renderToStaticMarkup(await HomePage());
+    const both=renderToStaticMarkup(await HomePage({searchParams:Promise.resolve({})}));
     expect(both).toContain('href="/cars?condition=NEW"');expect(both).toContain('href="/cars?condition=USED"');
   });
   it("uses the same profile and factual advantages on /about",async()=>{

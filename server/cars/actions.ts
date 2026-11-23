@@ -8,6 +8,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { logger } from "@/server/log";
 import {
   createCar,
+  arrangeUploadedCarImages,
   deleteCarImage,
   deleteCarWithMedia,
   InvalidModelRelationError,
@@ -23,6 +24,9 @@ import { reportUploadFailure } from "@/server/upload-feedback";
 import { actionResult } from "@/types/action-state";
 
 const idSchema = z.string().cuid();
+const uploadedImageIdsSchema = z.array(idSchema).max(50);
+
+export type QueuedImageUploadResult = ActionState & { image?: { id: string; isPrimary: boolean; sortOrder: number } };
 
 function refreshPublicCarRoutes(slug?: string) {
   revalidatePath("/");
@@ -104,6 +108,51 @@ export async function uploadImageAction(carId: string, _state: ActionState, form
     return actionResult("warning", "Gambar disimpan. Muat ulang halaman untuk melihat perubahan.");
   }
   return actionResult("success", "Gambar berhasil diunggah.");
+}
+
+export async function uploadQueuedImageAction(carId: string, formData: FormData): Promise<QueuedImageUploadResult> {
+  await requireAdmin();
+  if (!idSchema.safeParse(carId).success) return actionResult("error", "ID mobil tidak valid.");
+  const parsed = await validateImageUpload(formData.get("image"));
+  if (!parsed.success) {
+    logger.warn("car.image_rejected", { carId });
+    return actionResult("error", "Gambar ditolak.", { image: parsed.error.issues.map(issue => issue.message) });
+  }
+  try {
+    const image = await uploadCarImage(carId, parsed.data);
+    try {
+      revalidatePath(`/admin/cars/${carId}/edit`);
+      refreshPublicCarRoutes();
+    } catch {
+      logger.warn("car.image_revalidation_failed", { carId });
+      return { ...actionResult("warning", "Gambar disimpan. Muat ulang halaman untuk melihat perubahan."), image: { id: image.id, isPrimary: image.isPrimary, sortOrder: image.sortOrder } };
+    }
+    return { ...actionResult("success", "Gambar berhasil diunggah."), image: { id: image.id, isPrimary: image.isPrimary, sortOrder: image.sortOrder } };
+  } catch (error) {
+    const message = reportUploadFailure("car.image_upload_failed", error, { carId });
+    return actionResult("error", message, { image: [message] });
+  }
+}
+
+export async function arrangeUploadedImagesAction(carId: string, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  if (!idSchema.safeParse(carId).success) return actionResult("error", "ID mobil tidak valid.");
+  let ids: unknown;
+  try { ids = JSON.parse(String(formData.get("imageIds") ?? "[]")); }
+  catch { return actionResult("error", "Urutan gambar tidak valid."); }
+  const parsedIds = uploadedImageIdsSchema.safeParse(ids);
+  const primaryValue = String(formData.get("primaryImageId") ?? "");
+  const primary = primaryValue ? idSchema.safeParse(primaryValue) : { success: true as const, data: undefined };
+  if (!parsedIds.success || !primary.success) return actionResult("error", "Urutan gambar tidak valid.");
+  try {
+    await arrangeUploadedCarImages(carId, parsedIds.data, primary.data);
+    revalidatePath(`/admin/cars/${carId}/edit`);
+    refreshPublicCarRoutes();
+    return actionResult("success", "Urutan dan gambar utama berhasil disimpan.");
+  } catch (error) {
+    logger.error("car.image_arrangement_failed", { carId, errorType: error instanceof Error ? error.name : "unknown" });
+    return actionResult("error", "Gambar tersimpan, tetapi urutan belum dapat diterapkan. Coba lagi.");
+  }
 }
 
 export async function setPrimaryImageAction(formData: FormData) {

@@ -137,6 +137,27 @@ export async function setPrimaryImage(carId: string, imageId: string) {
   }, serializable);
 }
 
+export async function arrangeUploadedCarImages(carId: string, uploadedImageIds: string[], primaryImageId?: string) {
+  await requireAdmin();
+  const uniqueIds = [...new Set(uploadedImageIds)];
+  if (uniqueIds.length !== uploadedImageIds.length) throw new Error("Daftar gambar tidak valid.");
+  const where = imageScope(carId);
+  await db.$transaction(async (tx) => {
+    if (!await tx.car.findUnique({ where: carScope(carId), select: { id: true } })) throw new Error("Mobil tidak ditemukan.");
+    const images = await tx.carImage.findMany({ where, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } });
+    const available = new Set(images.map(image => image.id));
+    if (uniqueIds.some(id => !available.has(id))) throw new Error("Gambar tidak ditemukan.");
+    if (primaryImageId && !uniqueIds.includes(primaryImageId)) throw new Error("Gambar utama tidak valid.");
+    const uploaded = new Set(uniqueIds);
+    const ordered = [...images.map(image => image.id).filter(id => !uploaded.has(id)), ...uniqueIds];
+    for (const [sortOrder, id] of ordered.entries()) await tx.carImage.update({ where: { ...where, id }, data: { sortOrder } });
+    if (primaryImageId) {
+      await tx.carImage.updateMany({ where: { ...where, isPrimary: true }, data: { isPrimary: false } });
+      await tx.carImage.update({ where: { ...where, id: primaryImageId }, data: { isPrimary: true } });
+    }
+  }, serializable);
+}
+
 export async function reorderCarImage(carId: string, imageId: string, direction: "up" | "down") {
   await requireAdmin();
   const where = imageScope(carId);

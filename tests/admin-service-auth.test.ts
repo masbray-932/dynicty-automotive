@@ -31,6 +31,7 @@ const boundaries = [
   { name: "car update", run: () => cars.updateCar("car", car) },
   { name: "car delete", run: () => cars.deleteCarWithMedia("car") },
   { name: "image upload", run: () => cars.uploadCarImage("car", file) },
+  { name: "image batch arrangement", run: () => cars.arrangeUploadedCarImages("car", ["image"]) },
   { name: "image primary", run: () => cars.setPrimaryImage("car", "image") },
   { name: "image reorder", run: () => cars.reorderCarImage("car", "image", "up") },
   { name: "image delete", run: () => cars.deleteCarImage("car", "image") },

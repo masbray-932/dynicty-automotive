@@ -1,4 +1,28 @@
 export const HOMEPAGE_CAR_LIMIT = 6;
+export const HOMEPAGE_CAR_PAGE_SIZE = 6;
+
+export function parseHomepageInventoryPage(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate && /^[1-9]\d{0,3}$/.test(candidate) ? Math.min(1000, Number(candidate)) : 1;
+}
+
+export function clampHomepageInventoryPage(page: number, total: number) {
+  const totalPages = Math.max(1, Math.ceil(Math.max(0, total) / HOMEPAGE_CAR_PAGE_SIZE));
+  return { page: Math.min(Math.max(1, Math.trunc(page) || 1), totalPages), totalPages };
+}
+
+export function homepagePaginationItems(page: number, totalPages: number): Array<number | "ellipsis"> {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pages = new Set([1, totalPages, page - 1, page, page + 1]);
+  const ordered = [...pages].filter(value => value >= 1 && value <= totalPages).sort((a, b) => a - b);
+  const result: Array<number | "ellipsis"> = [];
+  for (const value of ordered) {
+    const previous = result[result.length - 1];
+    if (typeof previous === "number" && value - previous > 1) result.push("ellipsis");
+    result.push(value);
+  }
+  return result;
+}
 
 export type PublicCarStatus = "DRAFT" | "AVAILABLE" | "SOLD";
 export type PublicCarCondition = "NEW" | "USED";

@@ -78,23 +78,35 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 
-it("keeps homepage featured/latest cards, taxonomy counts and cover images within legacy scope", async () => {
-  mocks.car.findMany.mockResolvedValueOnce([car]).mockResolvedValueOnce([{ ...car, id: "latest", slug: "latest", images: [] }]);
+it("keeps the deterministic homepage page, taxonomy counts and cover images within legacy scope", async () => {
+  mocks.car.count.mockResolvedValueOnce(2);
+  mocks.car.findMany.mockResolvedValueOnce([car, { ...car, id: "latest", slug: "latest", images: [] }]);
   mocks.brand.findMany.mockResolvedValueOnce([{ ...car.brand, logoStorageKey: null, models: [car.model], _count: { cars: 2 } }]);
   const data = await getHomepageData(legacy);
-  expect(data.featuredCars[0]).toMatchObject({ slug: "legacy-car", imageUrl: "/uploads/cars/legacy-car/front.webp" });
-  expect(data.latestCars[0]).toMatchObject({ slug: "latest" });
+  expect(data.cars).toMatchObject([{ slug: "legacy-car", imageUrl: "/uploads/cars/legacy-car/front.webp" }, { slug: "latest" }]);
+  expect(data).toMatchObject({ inventoryPage: 1, inventoryTotalPages: 1, stockSummary: { availableCount: 2 } });
   expect(data.brands).toEqual([{ ...car.brand, logoUrl: null, models: [car.model], availableCars: 2 }]);
-  expect(mocks.car.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
-    where: { ...published, featured: true }, select: expect.objectContaining({ images: expect.objectContaining({ where: owner, take: 1 }) }),
+  expect(mocks.car.findMany).toHaveBeenCalledWith(expect.objectContaining({
+    where: published, orderBy: [{ featured: "desc" }, { updatedAt: "desc" }, { id: "asc" }], skip: 0, take: 6,
+    select: expect.objectContaining({ images: expect.objectContaining({ where: owner, take: 1 }) }),
   }));
-  expect(mocks.car.findMany).toHaveBeenNthCalledWith(2, expect.objectContaining({ where: { ...published, id: { notIn: ["legacy-car"] } } }));
   expect(mocks.brand.findMany).toHaveBeenCalledWith(expect.objectContaining({
     where: { ...owner, cars: { some: published }, active: true },
     select: expect.objectContaining({
       models: expect.objectContaining({ where: { ...owner, brand: owner, cars: { some: published } } }),
       _count: { select: { cars: { where: published } } },
     }),
+  }));
+});
+
+it("loads the next six unique homepage vehicles from the real scoped inventory", async () => {
+  mocks.car.count.mockResolvedValueOnce(20);
+  mocks.car.findMany.mockResolvedValueOnce([{ ...car, id: "page-three", slug: "page-three" }]);
+  const data = await getHomepageData(legacy, 3);
+  expect(data).toMatchObject({ inventoryPage: 3, inventoryTotalPages: 4, cars: [{ id: "page-three" }] });
+  expect(mocks.car.findMany).toHaveBeenCalledWith(expect.objectContaining({
+    where: published, skip: 12, take: 6,
+    orderBy: [{ featured: "desc" }, { updatedAt: "desc" }, { id: "asc" }],
   }));
 });
 

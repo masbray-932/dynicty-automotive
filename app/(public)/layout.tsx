@@ -15,7 +15,7 @@ import { getPublicDealerContent } from "@/server/content/service";
 export async function generateMetadata(): Promise<Metadata> {
   await connection();
   const dealer = await getDealerPresentation();
-  return { icons: { icon: dealer.faviconUrl ? [{ url: dealer.faviconUrl, type: "image/webp" }] : [{ url: "/favicon.ico" }] } };
+  return { icons: { icon: dealer.faviconUrl ? [{ url: dealer.faviconUrl, type: "image/webp" }] : [{ url: "/auto-18-favicon.png", type: "image/png" }] } };
 }
 
 export default async function PublicLayout({ children }: { children: ReactNode }) {

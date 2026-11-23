@@ -33,7 +33,8 @@ describe("S5.2M public UI refinements",()=>{
 
   it("shows complete sales portraits in a compact non-cropping image area",()=>{
     const html=renderToStaticMarkup(<PublicSalesTeam members={[{id:"one",fullName:"Ayu",title:"Sales",biography:"Membantu pelanggan.",imageUrl:"/uploads/ayu.png",whatsappUrl:"https://wa.me/6281234567890"}]}/>);
-    expect(html).toContain("object-contain p-3");
+    expect(html).toContain("object-contain object-bottom");
+    expect(html).not.toContain("object-contain p-3");
     expect(html).toContain("h-52");
     expect(html).not.toContain("object-cover");
     expect(html).toContain("Hubungi via WhatsApp");
