@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { db } from "@/db/client";
-import { HOMEPAGE_CAR_LIMIT, dealerFallback, inventoryCondition, mergeDealerPresentation, selectFeaturedHomepageCars, type InventoryMode, type StockSummary } from "@/features/homepage/domain";
+import { clampHomepageInventoryPage, dealerFallback, HOMEPAGE_CAR_PAGE_SIZE, inventoryCondition, mergeDealerPresentation, type InventoryMode, type StockSummary } from "@/features/homepage/domain";
 import { legacyDealerFaviconUrl, legacyDealerLogoUrl } from "@/server/settings/logo-url";
 import { logger } from "@/server/log";
 import { getLegacyPublicDealerScope } from "@/server/dealer/scope";
@@ -100,41 +100,23 @@ const publicInventoryWhere = (scope: ReturnType<typeof legacyStorefrontInventory
   ...(inventoryCondition(mode) ? { condition: inventoryCondition(mode) } : {}),
 });
 
-async function getFeaturedCars(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode) {
-  const cars = await db.car.findMany({
-    where: { ...publicInventoryWhere(scope, mode), featured: true },
-    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
-    take: HOMEPAGE_CAR_LIMIT * 3,
-    select: publicCarSelect(scope),
-  });
-  return selectFeaturedHomepageCars(cars.map((car) => ({
-    car,
-    id: car.id,
-    status: car.status,
-    featured: car.featured,
-    updatedAt: car.updatedAt,
-    hasImage: car.images.length > 0,
-  }))).map((candidate) => toHomepageCar(candidate.car));
-}
-
-async function getStockSummary(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode): Promise<StockSummary> {
+async function getHomepageInventory(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode, requestedPage: number) {
   const where = publicInventoryWhere(scope, mode);
   const [availableCount, latest, settings] = await Promise.all([
     db.car.count({ where }),
     db.car.findFirst({ where, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], select: { updatedAt: true } }),
     db.dealerSettings.findUnique({ where: { id: scope.car.dealerId === null ? "default" : String(scope.car.dealerId), AND: [{ dealerId: scope.car.dealerId }] }, select: { inventoryUpdatedAt: true } }),
   ]);
-  return { availableCount, lastUpdatedAt: settings?.inventoryUpdatedAt ?? latest?.updatedAt ?? null };
-}
-
-async function getLatestCars(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode, excludedIds: string[]) {
+  const { page, totalPages } = clampHomepageInventoryPage(requestedPage, availableCount);
   const cars = await db.car.findMany({
-    where: { ...publicInventoryWhere(scope, mode), ...(excludedIds.length ? { id: { notIn: excludedIds } } : {}) },
-    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
-    take: HOMEPAGE_CAR_LIMIT,
+    where,
+    orderBy: [{ featured: "desc" }, { updatedAt: "desc" }, { id: "asc" }],
+    skip: (page - 1) * HOMEPAGE_CAR_PAGE_SIZE,
+    take: HOMEPAGE_CAR_PAGE_SIZE,
     select: publicCarSelect(scope),
   });
-  return cars.map(toHomepageCar);
+  const stockSummary: StockSummary = { availableCount, lastUpdatedAt: settings?.inventoryUpdatedAt ?? latest?.updatedAt ?? null };
+  return { cars: cars.map(toHomepageCar), page, totalPages, stockSummary };
 }
 
 async function getBrands(scope: ReturnType<typeof legacyStorefrontInventory>, mode: InventoryMode) {
@@ -169,18 +151,13 @@ async function safely<T>(operation: () => Promise<T>, fallback: T) {
   }
 }
 
-export async function getHomepageData(context: InventoryContext) {
+export async function getHomepageData(context: InventoryContext, requestedPage = 1) {
   const scope = legacyStorefrontInventory(context);
   const dealer = await getDealerPresentation();
   const mode = dealer.inventoryMode ?? "BOTH";
-  const [featuredCars, brands, stockSummary] = await Promise.all([
-    safely(() => getFeaturedCars(scope, mode), [] as HomepageCar[]),
+  const [inventory, brands] = await Promise.all([
+    safely(() => getHomepageInventory(scope, mode, requestedPage), { cars: [] as HomepageCar[], page: 1, totalPages: 1, stockSummary: { availableCount: 0, lastUpdatedAt: null } as StockSummary }),
     safely(() => getBrands(scope, mode), [] as HomepageBrand[]),
-    safely(() => getStockSummary(scope, mode), { availableCount: 0, lastUpdatedAt: null } as StockSummary),
   ]);
-  const latestCars = await safely(
-    () => getLatestCars(scope, mode, featuredCars.map((car) => car.id)),
-    [] as HomepageCar[],
-  );
-  return { featuredCars, latestCars, brands, dealer, stockSummary };
+  return { cars: inventory.cars, inventoryPage: inventory.page, inventoryTotalPages: inventory.totalPages, brands, dealer, stockSummary: inventory.stockSummary };
 }

@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { imageFile } from "./fixtures/images";
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), put: vi.fn(), remove: vi.fn(), car: vi.fn(), aggregate: vi.fn(), create: vi.fn(), settings: vi.fn(), refresh: vi.fn(), log: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), put: vi.fn(), remove: vi.fn(), car: vi.fn(), aggregate: vi.fn(), create: vi.fn(), findImages: vi.fn(), updateImage: vi.fn(), updateImages: vi.fn(), settings: vi.fn(), refresh: vi.fn(), log: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/auth/session", () => ({ requireAdmin: mocks.auth }));
 vi.mock("@/server/log", () => ({ logger: { error: mocks.log, warn: mocks.log } }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.refresh }));
 vi.mock("@/services/storage", () => ({ getStorageProvider: () => ({ put: mocks.put, delete: mocks.remove }) }));
-vi.mock("@/db/client", () => ({ db: { car: { findUnique: mocks.car }, dealerSettings: { upsert: mocks.settings }, $transaction: async (fn: (tx: unknown) => unknown) => fn({ car: { findUnique: mocks.car }, carImage: { aggregate: mocks.aggregate, create: mocks.create } }) } }));
-import { uploadCarImage } from "@/server/cars/service";
+vi.mock("@/db/client", () => ({ db: { car: { findUnique: mocks.car }, dealerSettings: { upsert: mocks.settings }, $transaction: async (fn: (tx: unknown) => unknown) => fn({ car: { findUnique: mocks.car }, carImage: { aggregate: mocks.aggregate, create: mocks.create, findMany: mocks.findImages, update: mocks.updateImage, updateMany: mocks.updateImages } }) } }));
+import { arrangeUploadedCarImages, uploadCarImage } from "@/server/cars/service";
 import { uploadImageAction } from "@/server/cars/actions";
 import { saveDealerSettingsAction } from "@/server/settings/actions";
 const empty = { message: "", errors: {} };
@@ -40,6 +40,15 @@ describe("upload persistence and safe failures", () => {
     const data = new FormData(); data.set("image", imageFile());
     expect((await uploadImageAction(id, empty, data)).status).toBe("warning");
     expect(mocks.create).toHaveBeenCalled(); expect(mocks.remove).not.toHaveBeenCalled();
+  });
+  it("atomically preserves existing photos while applying queued order and selected cover", async () => {
+    mocks.findImages.mockResolvedValue([{ id: "existing" }, { id: "new-two" }, { id: "new-one" }]);
+    await arrangeUploadedCarImages(id, ["new-one", "new-two"], "new-two");
+    expect(mocks.updateImage).toHaveBeenNthCalledWith(1, { where: expect.objectContaining({ id: "existing", carId: id }), data: { sortOrder: 0 } });
+    expect(mocks.updateImage).toHaveBeenNthCalledWith(2, { where: expect.objectContaining({ id: "new-one", carId: id }), data: { sortOrder: 1 } });
+    expect(mocks.updateImage).toHaveBeenNthCalledWith(3, { where: expect.objectContaining({ id: "new-two", carId: id }), data: { sortOrder: 2 } });
+    expect(mocks.updateImages).toHaveBeenCalledWith({ where: expect.objectContaining({ carId: id, isPrimary: true }), data: { isPrimary: false } });
+    expect(mocks.updateImage).toHaveBeenLastCalledWith({ where: expect.objectContaining({ id: "new-two", carId: id }), data: { isPrimary: true } });
   });
 });
 

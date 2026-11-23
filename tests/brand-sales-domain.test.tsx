@@ -41,6 +41,8 @@ describe("brand identity and sales-team domain", () => {
   it("renders safe WhatsApp contact and accessible photo alternatives", () => {
     const html = renderToStaticMarkup(<PublicSalesTeam members={[{ id: "one", fullName: "Ayu", title: "Sales Consultant", biography: "Siap membantu.", imageUrl: "/uploads/sales.webp", whatsappUrl: "https://wa.me/6281234567890" }]} />);
     expect(html).toContain('href="https://wa.me/6281234567890"'); expect(html).toContain('rel="noopener noreferrer"'); expect(html).toContain("Foto Ayu, Sales Consultant");
+    const source = readFileSync("features/sales-team/public-sales-team.tsx", "utf8");
+    expect(source).toContain("object-contain object-bottom"); expect(source).not.toContain("object-contain p-3");
   });
 
   it("commits an additive migration with ownership and publication indexes", () => {
