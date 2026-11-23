@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import { HomepageInventoryFooter } from "@/features/homepage/inventory-pagination";
 import { clampHomepageInventoryPage, homepagePaginationItems, parseHomepageInventoryPage } from "@/features/homepage/domain";
-import { hasUnsavedUploads, pendingUploadIds, reorderUploadQueue, successfulUploadIds, uploadFileFingerprint, type UploadQueueItem } from "@/features/cars/image-upload-queue";
+import { arrangeSuccessfulQueue, hasUnsavedUploads, pendingUploadIds, reorderUploadQueue, successfulUploadIds, uploadFileFingerprint, uploadQueueItems, type UploadQueueItem } from "@/features/cars/image-upload-queue";
 
 describe("R01 homepage inventory pagination", () => {
   it("parses safe page input, clamps boundaries, and creates compact page indicators", () => {
@@ -44,9 +44,52 @@ describe("R03 queued vehicle photo workflow", () => {
 
   it("wires explicit multi-select, preview, ordering, primary choice, progress, retry, and leave protection", () => {
     const source = readFileSync("features/cars/image-manager.tsx", "utf8");
-    for (const marker of ["multiple", "Upload Semua", "Hapus pilihan", "Jadikan utama", "Progres upload foto", "Coba lagi", "beforeunload", "Foto belum diunggah"]) expect(source).toContain(marker);
+    for (const marker of ["multiple", "Upload Semua", "Hapus pilihan", "Jadikan utama", "Progres upload foto", "Coba lagi", "Coba simpan urutan", "beforeunload", "Foto belum diunggah", "finally"]) expect(source).toContain(marker);
     expect(source).toContain("uploadQueuedImageAction");
     expect(source).not.toContain("useActionState(uploadImageAction");
+  });
+
+  it("recovers unexpected upload failures, continues the batch, and preserves successful server IDs", async () => {
+    const existing = item("existing", "success", "saved-existing");
+    const first = item("first", "pending");
+    const second = item("second", "pending");
+    const upload = vi.fn()
+      .mockRejectedValueOnce(new Error("network interrupted"))
+      .mockResolvedValueOnce({ status: "success", message: "Tersimpan", errors: {}, image: { id: "saved-second" } });
+    const states: UploadQueueItem[][] = [];
+    const result = await uploadQueueItems({
+      items: [existing, first, second],
+      ids: [first.id, second.id],
+      upload,
+      onChange: next => states.push(next),
+    });
+    expect(result).toMatchObject([
+      { id: "existing", status: "success", serverImageId: "saved-existing" },
+      { id: "first", status: "error" },
+      { id: "second", status: "success", serverImageId: "saved-second" },
+    ]);
+    expect(result[1].message).toContain("gangguan tak terduga");
+    expect(upload).toHaveBeenCalledTimes(2);
+    expect(states.at(-1)).toEqual(result);
+
+    const retryUpload = vi.fn().mockResolvedValue({ status: "success", message: "Tersimpan", errors: {}, image: { id: "saved-first" } });
+    const retried = await uploadQueueItems({ items: result, ids: result.map(entry => entry.id), upload: retryUpload });
+    expect(retryUpload).toHaveBeenCalledTimes(1);
+    expect(successfulUploadIds(retried)).toEqual(["saved-existing", "saved-first", "saved-second"]);
+  });
+
+  it("retries arrangement with preserved IDs without invoking uploads again", async () => {
+    const items = [item("one", "success", "saved-one"), item("two", "success", "saved-two")];
+    const arrange = vi.fn()
+      .mockRejectedValueOnce(new Error("temporary arrangement failure"))
+      .mockResolvedValueOnce({ status: "success", message: "Urutan tersimpan" });
+    const first = await arrangeSuccessfulQueue({ items, primaryQueueId: "two", arrange });
+    const second = await arrangeSuccessfulQueue({ items, primaryQueueId: "two", arrange });
+    expect(first).toMatchObject({ ok: false });
+    expect(first.message).toContain("Foto sudah tersimpan");
+    expect(second).toEqual({ ok: true, message: "Urutan tersimpan" });
+    expect(arrange).toHaveBeenNthCalledWith(1, ["saved-one", "saved-two"], "saved-two");
+    expect(arrange).toHaveBeenNthCalledWith(2, ["saved-one", "saved-two"], "saved-two");
   });
 });
 
