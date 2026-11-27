@@ -4,6 +4,11 @@ import { isStagingDeployment } from "./lib/deployment-environment";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Auto Eighteen requires SEO metadata in the server-delivered <head> for
+  // every user agent. Async public-layout icons and page metadata otherwise
+  // stream after </head> in Next 16. Blocking waits for existing metadata reads
+  // (no extra DB queries); the TTFB tradeoff is documented in the hotfix report.
+  htmlLimitedBots: /.*/,
   // The detail proxy must distinguish Flight requests before streaming starts.
   // Next otherwise strips RSC headers from the Proxy request.
   skipProxyUrlNormalize: true,
